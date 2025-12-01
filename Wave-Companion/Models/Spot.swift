@@ -6,3 +6,12 @@
 //
 
 import Foundation
+
+
+struct Spot: Codable {
+    var id: String
+    var country: String
+    var name: String
+    var latitude: Double
+    var longitude: Double
+}
