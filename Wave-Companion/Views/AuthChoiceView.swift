@@ -9,7 +9,29 @@ import SwiftUI
 
 struct AuthChoiceView: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        VStack{
+            
+            Image("logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 150, height: 150)
+                .padding()
+            
+            Text("Wave Companion")
+            
+           
+            Button("Inscription"){
+                // Sign Up
+            }
+            .buttonStyle(.borderedProminent)
+            
+            Button("Connexion"){
+                // Login
+            }
+            .buttonStyle(.bordered)
+            
+        }
+        .padding()
     }
 }
 
