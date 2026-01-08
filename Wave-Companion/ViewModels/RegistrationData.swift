@@ -15,7 +15,7 @@ struct RegistrationData {
     var profileImage: String = ""
     var nationality: String = ""
 
-    var surfLevel: String = ""
+    var surfLevel: SurfLevelModel? = nil
     var boardType: String = ""
     var boardColor: String = ""
     
@@ -23,18 +23,23 @@ struct RegistrationData {
     
     // Crée une instance User à partir des données saisies 
     func buildUser() -> User {
-        User(
+        guard let surfLevel = surfLevel else {
+            fatalError("Le niveau de surf doit être selectionné")
+        }
+
+        return User(
             id: UUID().uuidString,
             name: name,
             email: email,
             password: password,
             profileImage: profileImage,
             nationality: nationality,
-            surfLevel: surfLevel,
+            surfLevelId: surfLevel.id,
             boardType: boardType,
             boardColor: boardColor,
             favoriteSpotIDs: favoriteSpotIDs
         )
     }
+
 }
 

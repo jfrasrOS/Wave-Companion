@@ -1,0 +1,103 @@
+[
+  {
+    "id": "mousse_1",
+    "name": "Première mousse – Niveau 1",
+    "description": "Découverte du surf et premières sensations sur mousse",
+    "skills": [
+      "S'équiper (combinaison - leash)",
+      "Prendre une mousse en position allongée sur la planche",
+      "Se redresser sur la planche",
+      "Tenir son équilibre debout sur la planche"
+    ],
+    "order": 1,
+    "category": "Débutant"
+  },
+  {
+    "id": "mousse_2",
+    "name": "Première mousse – Niveau 2",
+    "description": "Autonomie progressive sur mousse",
+    "skills": [
+      "Se redresser rapidement sur la planche",
+      "Conserver son équilibre debout sur la planche",
+      "S'orienter vers la droite ou la gauche en position debout"
+    ],
+    "order": 2,
+    "category": "Débutant"
+  },
+  {
+    "id": "bronze_1",
+    "name": "Vague de bronze – Niveau 1",
+    "description": "Premières vagues après les mousses",
+    "skills": [
+      "Ramer avec efficacité pour prendre les vagues",
+      "Assurer son take off",
+      "Conserver son équilibre debout en bas de vague"
+    ],
+    "order": 3,
+    "category": "Débutant"
+  },
+  {
+    "id": "bronze_2",
+    "name": "Vague de bronze – Niveau 2",
+    "description": "Contrôle et continuité après le take off",
+    "skills": [
+      "Passer les mousses sans lâcher la planche",
+      "Se lever rapidement lors du take off",
+      "Conserver son équilibre debout jusqu'au bord après le take off",
+      "S'orienter vers la droite ou vers la gauche dans les mousses après le take off"
+    ],
+    "order": 4,
+    "category": "Débutant"
+  },
+  {
+    "id": "argent_1",
+    "name": "Vague d'argent – Niveau 1",
+    "description": "Maîtrise des trajectoires et du passage de barre",
+    "skills": [
+      "Faire des \"canards\" pour passer les mousses",
+      "Prendre une direction au take off",
+      "Conserver son équilibre debout jusqu'au bord après le take off"
+    ],
+    "order": 5,
+    "category": "Intermédiaire"
+  },
+  {
+    "id": "argent_2",
+    "name": "Vague d'argent – Niveau 2",
+    "description": "Vitesse et lecture de vague",
+    "skills": [
+      "Suivre la vague en utilisant une trajectoire ondulatoire",
+      "Gagner de la vitesse en utilisant la hauteur de la vague",
+      "Accentuer le bottom turn en position de face ou de dos"
+    ],
+    "order": 6,
+    "category": "Intermédiaire"
+  },
+  {
+    "id": "or_1",
+    "name": "Vague d'or – Niveau 1",
+    "description": "Manœuvres avancées et placement",
+    "skills": [
+      "Faire des \"canards\" pour passer les vagues",
+      "Prendre de la vitesse sur la vague",
+      "Effectuer un virage en haut de vague",
+      "Se replacer dans le curl"
+    ],
+    "order": 7,
+    "category": "Expert"
+  },
+  {
+    "id": "or_2",
+    "name": "Vague d'or – Niveau 2",
+    "description": "Surf expert et manœuvres engagées",
+    "skills": [
+      "Réaliser un floatter",
+      "Réaliser un enchaînement bottom turn, roller",
+      "Réaliser un cut back",
+      "Réaliser un tube"
+    ],
+    "order": 8,
+    "category": "Expert"
+  }
+]
+

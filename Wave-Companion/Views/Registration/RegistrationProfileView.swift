@@ -75,13 +75,17 @@ struct RegistrationProfileView: View {
                 Button {
                     
                         if vm.validateProfile() {
-                            let user = vm.register()
                             // Vérification données récupérés
-                            print("Photo présente :", !user.profileImage.isEmpty)
-                            print("Taille Base64 :", user.profileImage.count, "caractères")
                             print("Pays sélectionné :", vm.selectedCountry?.name ?? "aucun")
                             print("Code stocké :", vm.data.nationality)
                             print("User :", vm.data.name, vm.data.email)
+                            
+                            //Vérification photo
+                            if !vm.data.profileImage.isEmpty {
+                                print("Photo présente, taille :", vm.data.profileImage.count, "caractères")
+                            } else {
+                                print("Pas de photo")
+                            }
 
                             vm.next(.surfLevel)
                         
