@@ -17,6 +17,7 @@ struct RegistrationData {
 
     var surfLevel: SurfLevelModel? = nil
     var boardType: String = ""
+    var boardSize: String = ""
     var boardColor: String = ""
     
     var favoriteSpotIDs: [String] = []

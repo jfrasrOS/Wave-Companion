@@ -17,6 +17,7 @@ struct User:Identifiable, Codable{
     var nationality: String
     var surfLevelId: String
     var boardType: String
+    var boardSize: String = ""
     var boardColor: String
     var favoriteSpotIDs: [String]  // ID des spots préférés choisis
 }
