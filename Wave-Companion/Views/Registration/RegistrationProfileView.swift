@@ -80,6 +80,7 @@ struct RegistrationProfileView: View {
                             print("Code stocké :", vm.data.nationality)
                             print("User :", vm.data.name, vm.data.email)
                             
+                            
                             //Vérification photo
                             if !vm.data.profileImage.isEmpty {
                                 print("Photo présente, taille :", vm.data.profileImage.count, "caractères")

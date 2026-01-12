@@ -1,0 +1,12 @@
+
+[
+  { "id": "mundiña_beach", "country": "Espagne", "region": "Galicia", "city": "Mundiña", "name": "Mundiña Beach", "latitude": 43.4145, "longitude": -8.2090 },
+  { "id": "pantin_beach", "country": "Espagne", "region": "Galicia", "city": "Pantín", "name": "Pantín", "latitude": 43.5787, "longitude": -8.1590 },
+  { "id": "zarautz", "country": "Espagne", "region": "Pays Basque", "city": "Zarautz", "name": "Zarautz", "latitude": 43.3030, "longitude": -2.1420 },
+  { "id": "sopelana", "country": "Espagne", "region": "Pays Basque", "city": "Sopelana", "name": "Sopelana", "latitude": 43.3850, "longitude": -2.9950 },
+  { "id": "mundaka", "country": "Espagne", "region": "Pays Basque", "city": "Mundaka", "name": "Mundaka", "latitude": 43.4167, "longitude": -2.6840 },
+  { "id": "plentzia", "country": "Espagne", "region": "Pays Basque", "city": "Plentzia", "name": "Plentzia", "latitude": 43.4200, "longitude": -2.9630 },
+  { "id": "san_sebastian_la_concha", "country": "Espagne", "region": "Pays Basque", "city": "San Sebastián", "name": "La Concha", "latitude": 43.3170, "longitude": -1.9820 },
+  { "id": "famara", "country": "Espagne", "region": "Canaries", "city": "Lanzarote", "name": "Famara", "latitude": 29.0500, "longitude": -13.6000 },
+  { "id": "sotavento", "country": "Espagne", "region": "Canaries", "city": "Fuerteventura", "name": "Sotavento", "latitude": 28.3500, "longitude": -14.3500 }
+]

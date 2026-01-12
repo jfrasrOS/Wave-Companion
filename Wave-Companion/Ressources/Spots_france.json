@@ -1,0 +1,219 @@
+[
+  {
+    "id": "hossegor_la_graviere",
+    "country": "France",
+    "region": "Landes",
+    "city": "Hossegor",
+    "name": "La Gravière",
+    "latitude": 43.6645,
+    "longitude": -1.4381
+  },
+  {
+    "id": "hossegor_la_nord",
+    "country": "France",
+    "region": "Landes",
+    "city": "Hossegor",
+    "name": "La Nord",
+    "latitude": 43.6732,
+    "longitude": -1.4433
+  },
+  {
+    "id": "hossegor_la_sud",
+    "country": "France",
+    "region": "Landes",
+    "city": "Hossegor",
+    "name": "La Sud",
+    "latitude": 43.6546,
+    "longitude": -1.4338
+  },
+  {
+    "id": "capbreton_le_santocha",
+    "country": "France",
+    "region": "Landes",
+    "city": "Capbreton",
+    "name": "Le Santocha",
+    "latitude": 43.6419,
+    "longitude": -1.4406
+  },
+  {
+    "id": "capbreton_la_piste",
+    "country": "France",
+    "region": "Landes",
+    "city": "Capbreton",
+    "name": "La Piste",
+    "latitude": 43.6352,
+    "longitude": -1.4451
+  },
+  {
+    "id": "seignosse_les_bourdaines",
+    "country": "France",
+    "region": "Landes",
+    "city": "Seignosse",
+    "name": "Les Bourdaines",
+    "latitude": 43.6906,
+    "longitude": -1.4414
+  },
+  {
+    "id": "seignosse_les_estagnots",
+    "country": "France",
+    "region": "Landes",
+    "city": "Seignosse",
+    "name": "Les Estagnots",
+    "latitude": 43.6997,
+    "longitude": -1.4447
+  },
+  {
+    "id": "biarritz_cote_des_basques",
+    "country": "France",
+    "region": "Pays Basque",
+    "city": "Biarritz",
+    "name": "Côte des Basques",
+    "latitude": 43.4746,
+    "longitude": -1.5685
+  },
+  {
+    "id": "biarritz_grande_plage",
+    "country": "France",
+    "region": "Pays Basque",
+    "city": "Biarritz",
+    "name": "Grande Plage",
+    "latitude": 43.4832,
+    "longitude": -1.5602
+  },
+  {
+    "id": "anglet_les_cavaliers",
+    "country": "France",
+    "region": "Pays Basque",
+    "city": "Anglet",
+    "name": "Les Cavaliers",
+    "latitude": 43.5206,
+    "longitude": -1.5381
+  },
+  {
+    "id": "anglet_la_chambre_d_amour",
+    "country": "France",
+    "region": "Pays Basque",
+    "city": "Anglet",
+    "name": "La Chambre d’Amour",
+    "latitude": 43.5007,
+    "longitude": -1.5473
+  },
+  {
+    "id": "guethary_parlementia",
+    "country": "France",
+    "region": "Pays Basque",
+    "city": "Guéthary",
+    "name": "Parlementia",
+    "latitude": 43.4218,
+    "longitude": -1.6123
+  },
+  {
+    "id": "lafitenia",
+    "country": "France",
+    "region": "Pays Basque",
+    "city": "Saint-Jean-de-Luz",
+    "name": "Lafitenia",
+    "latitude": 43.4036,
+    "longitude": -1.6424
+  },
+  {
+    "id": "hendaye_plage",
+    "country": "France",
+    "region": "Pays Basque",
+    "city": "Hendaye",
+    "name": "Plage d’Hendaye",
+    "latitude": 43.3725,
+    "longitude": -1.7747
+  },
+  {
+    "id": "lacanau_ocean",
+    "country": "France",
+    "region": "Gironde",
+    "city": "Lacanau",
+    "name": "Lacanau Océan",
+    "latitude": 44.9944,
+    "longitude": -1.2036
+  },
+  {
+    "id": "carcans_plage",
+    "country": "France",
+    "region": "Gironde",
+    "city": "Carcans",
+    "name": "Carcans Plage",
+    "latitude": 45.0815,
+    "longitude": -1.1891
+  },
+  {
+    "id": "le_porge",
+    "country": "France",
+    "region": "Gironde",
+    "city": "Le Porge",
+    "name": "Le Porge Océan",
+    "latitude": 44.8746,
+    "longitude": -1.2321
+  },
+  {
+    "id": "soulac_sur_mer",
+    "country": "France",
+    "region": "Gironde",
+    "city": "Soulac-sur-Mer",
+    "name": "Soulac",
+    "latitude": 45.5104,
+    "longitude": -1.1267
+  },
+  {
+    "id": "la_torche",
+    "country": "France",
+    "region": "Bretagne",
+    "city": "Plomeur",
+    "name": "La Torche",
+    "latitude": 47.8345,
+    "longitude": -4.3541
+  },
+  {
+    "id": "penhors",
+    "country": "France",
+    "region": "Bretagne",
+    "city": "Pouldreuzic",
+    "name": "Penhors",
+    "latitude": 47.9655,
+    "longitude": -4.4482
+  },
+  {
+    "id": "crozon_la_palue",
+    "country": "France",
+    "region": "Bretagne",
+    "city": "Crozon",
+    "name": "La Palue",
+    "latitude": 48.2061,
+    "longitude": -4.5473
+  },
+  {
+    "id": "sables_d_olonne",
+    "country": "France",
+    "region": "Vendée",
+    "city": "Les Sables-d’Olonne",
+    "name": "La Grande Plage",
+    "latitude": 46.4966,
+    "longitude": -1.7923
+  },
+  {
+    "id": "bud_bud",
+    "country": "France",
+    "region": "Vendée",
+    "city": "Longeville-sur-Mer",
+    "name": "Bud Bud",
+    "latitude": 46.4113,
+    "longitude": -1.5144
+  },
+  {
+    "id": "siouville",
+    "country": "France",
+    "region": "Normandie",
+    "city": "Siouville-Hague",
+    "name": "Siouville",
+    "latitude": 49.5623,
+    "longitude": -1.8485
+  }
+]
+
