@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5236CD9F2F169054006BE9CD /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 5236CD802F169054006BE9CD /* .gitignore */; };
+		5236CDA12F169054006BE9CD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5236CD822F169054006BE9CD /* GoogleService-Info.plist */; };
 		52C7E6482F150CC900588A64 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 52C7E6472F150CC900588A64 /* FirebaseAnalytics */; };
 		52C7E64A2F150CC900588A64 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 52C7E6492F150CC900588A64 /* FirebaseAuth */; };
 		52C7E64C2F150CC900588A64 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 52C7E64B2F150CC900588A64 /* FirebaseCore */; };
@@ -16,6 +18,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5236CD802F169054006BE9CD /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		5236CD822F169054006BE9CD /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		525A56562ED5F55C009E722A /* Wave-Companion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Wave-Companion.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -47,6 +51,8 @@
 		525A564D2ED5F55C009E722A = {
 			isa = PBXGroup;
 			children = (
+				5236CD802F169054006BE9CD /* .gitignore */,
+				5236CD822F169054006BE9CD /* GoogleService-Info.plist */,
 				525A56582ED5F55C009E722A /* Wave-Companion */,
 				525A56572ED5F55C009E722A /* Products */,
 			);
@@ -133,6 +139,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5236CD9F2F169054006BE9CD /* .gitignore in Resources */,
+				5236CDA12F169054006BE9CD /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
