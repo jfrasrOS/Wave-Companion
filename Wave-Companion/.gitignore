@@ -7,6 +7,8 @@ DerivedData/
 
 # Firebase
 /Wave-Companion/GoogleService-Info.plist
+GoogleService-Info.plist
+**/GoogleService-Info.plist
 
 
 # Swift Package Manager
