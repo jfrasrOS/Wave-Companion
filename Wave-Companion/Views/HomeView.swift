@@ -8,7 +8,7 @@ struct HomeView: View {
     var body: some View {
        
             VStack(spacing: 20) {
-                Text("Bienvenue sur Wave Companion !")
+                Text("Wave Companion")
                     .font(.title.bold())
 
                 // Bouton déconnexion
