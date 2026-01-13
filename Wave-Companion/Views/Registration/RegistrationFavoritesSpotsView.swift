@@ -1,8 +1,12 @@
 import SwiftUI
+import FirebaseAuth
 
 struct RegistrationFavoritesSpotsView: View {
 
+    @EnvironmentObject var session: SessionManager
     @EnvironmentObject var vm: RegistrationViewModel
+    
+    // Tous le spots dispo
     let spots: [Spot] = SpotService.loadAllSpots()
 
     @State private var selectedCountry: String = "France"
@@ -47,10 +51,9 @@ struct RegistrationFavoritesSpotsView: View {
             .padding(.horizontal)
             .onChange(of: selectedCountry) {
                 selectedRegion = regions.first ?? ""
-               
             }
 
-            // Picker pour la région (filtré par pays)
+            // Picker pour la région
             if !regions.isEmpty {
                 Picker("Région", selection: $selectedRegion) {
                     ForEach(regions, id: \.self) { region in
@@ -59,9 +62,6 @@ struct RegistrationFavoritesSpotsView: View {
                 }
                 .pickerStyle(MenuPickerStyle())
                 .padding(.horizontal)
-                .onChange(of: selectedRegion) {
-                   
-                }
             }
 
             // Compteur de sélection
@@ -79,7 +79,7 @@ struct RegistrationFavoritesSpotsView: View {
                 .padding(.horizontal, 8)
             }
 
-            // Liste des spots sélectionnés avec petite croix
+            // Liste des spots sélectionnés
             if !selectedSpots.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Spots sélectionnés :")
@@ -92,9 +92,9 @@ struct RegistrationFavoritesSpotsView: View {
                                 .background(Color(.systemGray5))
                                 .cornerRadius(12)
                             Spacer()
-                            Button(action: {
+                            Button {
                                 selectedSpotIDs.remove(spot.id)
-                            }) {
+                            } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundColor(.red)
                             }
@@ -104,22 +104,19 @@ struct RegistrationFavoritesSpotsView: View {
                 .padding(.horizontal)
             }
 
-            // Bouton terminer et verification des données récupérer pendant le processus d'inscription
+            // Bouton terminer inscription
             Button {
+                // Save les spots sélectionnés dans vm
                 vm.data.favoriteSpotIDs = Array(selectedSpotIDs)
-                _ = vm.register()
-                print("Pays sélectionné :", vm.selectedCountry?.name ?? "aucun")
-                print("Code stocké :", vm.data.nationality)
-                print("User :", vm.data.name, vm.data.email)
-                print("Photo présente, taille :", vm.data.profileImage.count, "caractères")
-                print("Niveau de surf :", vm.data.surfLevel!)
-                print("""
-                    Type   : \(vm.data.boardType)
-                    Taille : \(vm.data.boardSize)
-                    Couleur: \(vm.data.boardColor)
-                    """)
-                print("spots favoris :", vm.data.favoriteSpotIDs)
                 
+                Task {
+                    // Lance la fonction d'inscpription
+                    await vm.completeRegistration(session: session)
+                    
+                    // supprime toutes les vues d'inscription de la pile
+                    vm.path.removeAll()
+                }
+
             } label: {
                 Text("Terminer l’inscription")
                     .foregroundColor(.white)
@@ -129,15 +126,15 @@ struct RegistrationFavoritesSpotsView: View {
                     .cornerRadius(12)
             }
             .disabled(selectedSpotIDs.isEmpty)
+
         }
         .padding()
-        .navigationTitle("Spots")
         .onAppear {
             if selectedRegion.isEmpty { selectedRegion = regions.first ?? "" }
         }
     }
 
-    // Bouton spot
+    // Bouton pour chaque Spot
     private func spotButton(for spot: Spot) -> some View {
         let isSelected = selectedSpotIDs.contains(spot.id)
 
@@ -154,7 +151,8 @@ struct RegistrationFavoritesSpotsView: View {
                 .cornerRadius(20)
         }
     }
-
+    
+    // Ajoute/Retire le spot de la sélection
     private func toggleSelection(for spot: Spot) {
         if selectedSpotIDs.contains(spot.id) {
             selectedSpotIDs.remove(spot.id)
@@ -162,5 +160,7 @@ struct RegistrationFavoritesSpotsView: View {
             selectedSpotIDs.insert(spot.id)
         }
     }
+
+ 
 }
 

@@ -2,41 +2,76 @@
 //  Wave_CompanionApp.swift
 //  Wave-Companion
 //
-//  Created by John on 25/11/2025.
-//
+
 import SwiftUI
-import SwiftData
+import FirebaseCore
+import FirebaseAuth
+
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        
+        // Configure Firebase une seule fois ici
+        FirebaseApp.configure()
+        
+        // Vérification du fichier GoogleService-Info.plist
+        if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") {
+            print("Fichier Firebase trouvé :", path)
+        } else {
+            print("Erreur : GoogleService-Info.plist manquant !")
+        }
+        
+        return true
+    }
+}
+
 
 @main
 struct Wave_CompanionApp: App {
     
-    @State private var isLoading = true
-    @State private var isUserLoggedIn = false
-
+    // Relie SwiftUI à AppDelegate
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
+    @StateObject private var session = SessionManager()
     @StateObject private var registrationVM = RegistrationViewModel()
-
+    
+    @State private var isLoading = true
+    
     var body: some Scene {
         WindowGroup {
-            // Ecran de chargement affiché au démarrage
+            
             if isLoading {
                 LoadingView()
                     .onAppear {
-                        // Simulation du temps de chargement
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            isLoading = false
-                        }
+                        checkAuthentication()
                     }
             } else {
-                // Si User est connecté -> Home
-                if isUserLoggedIn {
-                    ContentView()
+                if session.isAuthenticated {
+                    HomeView()
+                        .environmentObject(session)
                         .environmentObject(registrationVM)
                 } else {
-                    //Sinon, page connexion/inscription
                     AuthChoiceView()
-                        .environmentObject(registrationVM)  
+                        .environmentObject(session)
+                        .environmentObject(registrationVM)
                 }
             }
         }
     }
+    
+    // Vérifie si un utilisateur Firebase est déjà connecté
+    private func checkAuthentication() {
+        DispatchQueue.main.async {
+            if let firebaseUser = Auth.auth().currentUser {
+                session.isAuthenticated = true
+                print("Utilisateur Firebase connecté :", firebaseUser.uid)
+            } else {
+                session.isAuthenticated = false
+                print("Aucun utilisateur connecté")
+            }
+            isLoading = false
+        }
+    }
 }
+

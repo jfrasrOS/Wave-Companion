@@ -18,7 +18,6 @@ class RegistrationViewModel: ObservableObject {
     @Published var confirmPassword: String = ""
     @Published var errorMessages: [String: String] = [:]
     
-    // Photo
     @Published var profileUIImage: UIImage? = nil
     @Published var isPhotoReady: Bool = false
     
@@ -80,5 +79,50 @@ class RegistrationViewModel: ObservableObject {
             print("Erreur conversion image:", error)
         }
     }
+    
+    // @MainActor s’assure que cette fonction tourne sur le thread principal
+    @MainActor
+    func completeRegistration(session: SessionManager) async {
+        do {
+            // Crée objet User
+            let user = data.buildUser()
+
+            // Crée user dans Firebase Auth et récupére uid
+            let uid = try await AuthService.shared.createUser(
+                email: user.email,
+                password: user.password
+            )
+            
+            // Upload de l'image
+            var profileURL = ""
+            if let imageData = Data(base64Encoded: data.profileImage) {
+                profileURL = try await UserService.shared.uploadProfileImage(imageData, uid: uid)
+            }
+
+            // Remplace la base64 par l'URL
+            var userToSave = user
+            userToSave.profileImage = profileURL
+            
+            // Save user dans Firestore avec le même uid
+            try await UserService.shared.saveUser(userToSave, uid: uid)
+
+            // met à jour SessionManager ( connecte user dans l'app )
+            session.login(user: user)
+
+        } catch {
+            print("Erreur inscription Firebase:", error)
+        }
+    }
+
+    //Réinitialise registationData (données temporaires)
+    func reset() {
+            data = RegistrationData()
+            confirmPassword = ""
+            errorMessages = [:]
+            profileUIImage = nil
+            isPhotoReady = false
+            selectedCountry = nil
+            path = []
+        }
 }
 
