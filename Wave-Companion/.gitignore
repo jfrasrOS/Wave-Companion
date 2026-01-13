@@ -1,0 +1,20 @@
+# Xcode
+build/
+DerivedData/
+*.xcworkspace
+*.xcuserdata
+*.swiftsourceinfo
+
+# Firebase
+GoogleService-Info.plist
+
+# Swift Package Manager
+Packages/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
