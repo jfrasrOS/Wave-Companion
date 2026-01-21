@@ -6,7 +6,7 @@ final class SpotService {
     private static let countryFiles: [String: String] = [
         "France": "Spots_france",
         "Espagne": "Spots_espagne",
-        "Portugal": "Spots_portugal" // à ajouter plus tard
+       
     ]
 
     // Charge tous les spots de tous les pays

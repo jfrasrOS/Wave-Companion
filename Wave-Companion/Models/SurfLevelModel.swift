@@ -1,9 +1,3 @@
-//
-//  SurfLevel.swift
-//  Wave-Companion
-//
-//  Created by John on 18/12/2025.
-//
 
 import Foundation
 

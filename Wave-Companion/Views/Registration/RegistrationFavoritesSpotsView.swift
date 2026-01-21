@@ -6,7 +6,7 @@ struct RegistrationFavoritesSpotsView: View {
     @EnvironmentObject var session: SessionManager
     @EnvironmentObject var vm: RegistrationViewModel
     
-    // Tous le spots dispo
+    // Tous les spots dispo
     let spots: [Spot] = SpotService.loadAllSpots()
 
     @State private var selectedCountry: String = "France"
@@ -35,100 +35,102 @@ struct RegistrationFavoritesSpotsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        ZStack {
+         
 
-            Text("Choisis tes spots")
-                .font(.title.bold())
-                .padding(.top)
+            VStack(spacing: 16) {
 
-            // Picker pour le pays
-            Picker("Pays", selection: $selectedCountry) {
-                ForEach(countries, id: \.self) { country in
-                    Text(country).tag(country)
-                }
-            }
-            .pickerStyle(MenuPickerStyle())
-            .padding(.horizontal)
-            .onChange(of: selectedCountry) {
-                selectedRegion = regions.first ?? ""
-            }
+                Text("Choisis tes spots")
+                    .font(.title.bold())
+                    .padding(.top)
 
-            // Picker pour la région
-            if !regions.isEmpty {
-                Picker("Région", selection: $selectedRegion) {
-                    ForEach(regions, id: \.self) { region in
-                        Text(region).tag(region)
+                // Picker pour le pays
+                Picker("Pays", selection: $selectedCountry) {
+                    ForEach(countries, id: \.self) { country in
+                        Text(country).tag(country)
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
                 .padding(.horizontal)
-            }
-
-            // Compteur de sélection
-            Text("\(selectedSpotIDs.count) / \(maxSelection) sélectionnés")
-                .foregroundColor(.secondary)
-
-            // Grille des spots
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 12) {
-                    ForEach(filteredSpots) { spot in
-                        spotButton(for: spot)
-                    }
+                .onChange(of: selectedCountry) {
+                    selectedRegion = regions.first ?? ""
                 }
-                .padding(.vertical)
-                .padding(.horizontal, 8)
-            }
 
-            // Liste des spots sélectionnés
-            if !selectedSpots.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Spots sélectionnés :")
-                        .font(.headline)
-                    ForEach(selectedSpots) { spot in
-                        HStack {
-                            Text(spot.name)
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 10)
-                                .background(Color(.systemGray5))
-                                .cornerRadius(12)
-                            Spacer()
-                            Button {
-                                selectedSpotIDs.remove(spot.id)
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.red)
+                // Picker pour la région
+                if !regions.isEmpty {
+                    Picker("Région", selection: $selectedRegion) {
+                        ForEach(regions, id: \.self) { region in
+                            Text(region).tag(region)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    .padding(.horizontal)
+                }
+
+                // Compteur de sélection
+                Text("\(selectedSpotIDs.count) / \(maxSelection) sélectionnés")
+                    .foregroundColor(.secondary)
+
+                // Grille des spots
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 12) {
+                        ForEach(filteredSpots) { spot in
+                            spotButton(for: spot)
+                        }
+                    }
+                    .padding(.vertical)
+                    .padding(.horizontal, 8)
+                }
+
+                // Liste des spots sélectionnés
+                if !selectedSpots.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Spots sélectionnés :")
+                            .font(.headline)
+                        ForEach(selectedSpots) { spot in
+                            HStack {
+                                Text(spot.name)
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 10)
+                                    .background(Color(.systemGray5))
+                                    .cornerRadius(12)
+                                Spacer()
+                                Button {
+                                    selectedSpotIDs.remove(spot.id)
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.red)
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
-            }
 
-            // Bouton terminer inscription
-            Button {
-                // Save les spots sélectionnés dans vm
-                vm.data.favoriteSpotIDs = Array(selectedSpotIDs)
-                
-                Task {
-                    // Lance la fonction d'inscpription
-                    await vm.completeRegistration(session: session)
+                // Bouton terminer inscription
+                Button {
+                    // Save les spots sélectionnés dans vm
+                    vm.data.favoriteSpotIDs = Array(selectedSpotIDs)
                     
-                    // supprime toutes les vues d'inscription de la pile
-                    vm.path.removeAll()
+                    Task {
+                        guard let uid = Auth.auth().currentUser?.uid else { return }
+                        await vm.completeRegistration(uid: uid, session: session)
+                    }
+
+
+                } label: {
+                    Text("Terminer l’inscription")
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(selectedSpotIDs.isEmpty ? Color.gray : Color.blue)
+                        .cornerRadius(12)
                 }
+                .disabled(selectedSpotIDs.isEmpty)
 
-            } label: {
-                Text("Terminer l’inscription")
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(selectedSpotIDs.isEmpty ? Color.gray : Color.blue)
-                    .cornerRadius(12)
             }
-            .disabled(selectedSpotIDs.isEmpty)
-
+            .padding()
         }
-        .padding()
         .onAppear {
             if selectedRegion.isEmpty { selectedRegion = regions.first ?? "" }
         }
@@ -160,7 +162,11 @@ struct RegistrationFavoritesSpotsView: View {
             selectedSpotIDs.insert(spot.id)
         }
     }
+}
 
- 
+#Preview {
+    RegistrationFavoritesSpotsView()
+        .environmentObject(RegistrationViewModel())
+        .environmentObject(SessionManager())
 }
 

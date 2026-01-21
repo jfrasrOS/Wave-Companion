@@ -1,48 +1,148 @@
-//
-//  AuthChoiceView.swift
-//  Wave-Companion
-//
-//  Created by John on 03/12/2025.
-//
-
 import SwiftUI
+import Combine
 
 struct AuthChoiceView: View {
     @EnvironmentObject var vm: RegistrationViewModel
 
+    struct Slide: Identifiable {
+        let id = UUID()
+        let title: String
+        let description: String
+        let imageName: String
+    }
+
+    let slides: [Slide] = [
+        Slide(title: "Surfez, rencontrez, partagez",
+              description: "Créez ou rejoignez des sessions et vivez le surf autrement, ensemble.",
+              imageName: "surf_hero"),
+        Slide(title: "Progressez à votre rythme",
+              description: "Atteignez vos objectifs et avancez étape par étape, vague après vague.",
+              imageName: "surf_progression"),
+        Slide(title: "Vos amis, toujours à portée de main",
+              description: "Suivez leurs sessions et restez connectés, même à distance.",
+              imageName: "surf_spots")
+    ]
+
+    @State private var currentIndex = 0
+    private let timer = Timer.publish(every: 4, on: .main, in: .common).autoconnect()
+
     var body: some View {
-        //ViewModel gère  le chemin de navigation
         NavigationStack(path: $vm.path) {
-            VStack(spacing: 20) {
+            ZStack {
+                Color.white.ignoresSafeArea()
 
-                NavigationLink("Connexion") {
-                    LoginView()
-                        .environmentObject(vm)
-                }
+                VStack {
+                    // Carousel
+                    TabView(selection: $currentIndex) {
+                        ForEach(slides.indices, id: \.self) { index in
+                            VStack(spacing: 20) {
+                                Image(slides[index].imageName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 300)
+                                    .cornerRadius(20)
+                                    .shadow(radius: 5)
 
-                NavigationLink("Inscription") {
-                    RegistrationProfileView()
-                        .environmentObject(vm)
+                                Text(slides[index].title)
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+
+                                Text(slides[index].description)
+                                    .font(.body)
+                                    .multilineTextAlignment(.center)
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal)
+                            }
+                            .tag(index)
+                        }
+                    }
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                    .frame(height: 450)
+                    .onReceive(timer) { _ in
+                        withAnimation {
+                            currentIndex = (currentIndex + 1) % slides.count
+                        }
+                    }
+
+                    HStack(spacing: 8) {
+                        ForEach(slides.indices, id: \.self) { index in
+                            Circle()
+                                .fill(index == currentIndex ? Color(hex: "#3F9AAE") : Color.gray.opacity(0.3))
+                                .frame(width: 7, height: 7)
+                        }
+                    }
+                    .padding(.top, 8)
+
+                    Spacer()
+
+                    // Boutons
+                    VStack(spacing: 15) {
+                        Button {
+                            vm.next(.signupMethod)
+                        } label: {
+                            Text("S’inscrire")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(hex: "#3F9AAE"))
+                                .cornerRadius(25)
+                        }
+
+                        NavigationLink {
+                            LoginView()
+                                .environmentObject(vm)
+                        } label: {
+                            Text("Se connecter")
+                                .font(.headline)
+                                .foregroundColor(Color(hex: "#3F9AAE"))
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .stroke(Color(hex: "#3F9AAE"), lineWidth: 2)
+                                )
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    Spacer()
                 }
-            }
-            // Gestion ders destinations pour chaque étape de l'inscription
-            .navigationDestination(for: RegistrationStep.self) { step in
-                switch step {
-                case .surfLevel:
-                    RegistrationSurfLevelView().environmentObject(vm)
-                case .board:
-                    RegistrationBoardView().environmentObject(vm)
-                case .spots:
-                    RegistrationFavoritesSpotsView().environmentObject(vm)
-                default:
-                    EmptyView()
+                .navigationDestination(for: RegistrationStep.self) { step in
+                    switch step {
+                    case .signupMethod:
+                        SignUpMethodView().environmentObject(vm)
+                    case .profile:
+                        RegistrationProfileView().environmentObject(vm)
+                    case .surfLevel:
+                        RegistrationSurfLevelView().environmentObject(vm)
+                    case .board:
+                        RegistrationBoardView().environmentObject(vm)
+                    case .spots:
+                        RegistrationFavoritesSpotsView().environmentObject(vm)
+                    }
                 }
             }
         }
     }
 }
 
-
-#Preview {
-    AuthChoiceView()
+// Hex Color
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: (a,r,g,b) = (255,(int>>8)*17,(int>>4&0xF)*17,(int&0xF)*17)
+        case 6: (a,r,g,b) = (255,int>>16,int>>8&0xFF,int&0xFF)
+        case 8: (a,r,g,b) = (int>>24,int>>16&0xFF,int>>8&0xFF,int&0xFF)
+        default: (a,r,g,b) = (255,0,0,0)
+        }
+        self.init(.sRGB, red: Double(r)/255, green: Double(g)/255, blue: Double(b)/255, opacity: Double(a)/255)
+    }
 }
+

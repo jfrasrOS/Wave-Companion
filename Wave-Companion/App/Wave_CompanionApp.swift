@@ -1,7 +1,3 @@
-//
-//  Wave_CompanionApp.swift
-//  Wave-Companion
-//
 
 import SwiftUI
 import FirebaseCore
@@ -41,17 +37,22 @@ struct Wave_CompanionApp: App {
     var body: some Scene {
         WindowGroup {
             
+            // Affiche le chargement
             if isLoading {
                 LoadingView()
                     .onAppear {
+                        // Vérifie si User est dèjà connecté sur Firebase
                         checkAuthentication()
                     }
+                // Chargement terminé, affichage des views
             } else {
+                // User connecté + inscription complète → HomeView
                 if session.isAuthenticated {
                     HomeView()
                         .environmentObject(session)
                         .environmentObject(registrationVM)
                 } else {
+                    // Sinon -> AuthChoice pour connexion/inscription
                     AuthChoiceView()
                         .environmentObject(session)
                         .environmentObject(registrationVM)
@@ -60,18 +61,17 @@ struct Wave_CompanionApp: App {
         }
     }
     
-    // Vérifie si un utilisateur Firebase est déjà connecté
-    private func checkAuthentication() {
-        DispatchQueue.main.async {
-            if let firebaseUser = Auth.auth().currentUser {
-                session.isAuthenticated = true
-                print("Utilisateur Firebase connecté :", firebaseUser.uid)
-            } else {
-                session.isAuthenticated = false
-                print("Aucun utilisateur connecté")
+   
+    // Vérifie si l'utilisateur est déjà connecté sur Firebase
+        private func checkAuthentication() {
+            DispatchQueue.main.async {
+                if let firebaseUser = Auth.auth().currentUser {
+                    // Utilisateur déjà authentifié → direct ProfileView
+                    registrationVM.data.email = firebaseUser.email ?? ""
+                    registrationVM.path = [.profile]
+                }
+                isLoading = false
             }
-            isLoading = false
         }
-    }
 }
 

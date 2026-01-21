@@ -1,10 +1,3 @@
-//
-//  SessionManager.swift
-//  Wave-Companion
-//
-//  Created by John on 12/01/2026.
-//
-
 import Foundation
 import Combine
 
@@ -20,9 +13,6 @@ class SessionManager: ObservableObject {
     func logout() {
         self.currentUser = nil
         self.isAuthenticated = false
-        
-        
     }
-    
-    
 }
+

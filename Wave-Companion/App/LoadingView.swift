@@ -1,10 +1,3 @@
-//
-//  LoadingView.swift
-//  Wave-Companion
-//
-//  Created by John on 03/12/2025.
-//
-
 import SwiftUI
 
 struct LoadingView: View {

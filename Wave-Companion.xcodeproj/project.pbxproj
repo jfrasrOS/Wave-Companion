@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		524624882F1E81C200D6EED0 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 524624872F1E81C200D6EED0 /* GoogleSignIn */; };
+		5246248A2F1E81C200D6EED0 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 524624892F1E81C200D6EED0 /* GoogleSignInSwift */; };
 		52C7E6482F150CC900588A64 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 52C7E6472F150CC900588A64 /* FirebaseAnalytics */; };
 		52C7E64A2F150CC900588A64 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 52C7E6492F150CC900588A64 /* FirebaseAuth */; };
 		52C7E64C2F150CC900588A64 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 52C7E64B2F150CC900588A64 /* FirebaseCore */; };
@@ -19,9 +21,22 @@
 		525A56562ED5F55C009E722A /* Wave-Companion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Wave-Companion.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5246248F2F1E930200D6EED0 /* Exceptions for "Wave-Companion" folder in "Wave-Companion" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 525A56552ED5F55C009E722A /* Wave-Companion */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		525A56582ED5F55C009E722A /* Wave-Companion */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5246248F2F1E930200D6EED0 /* Exceptions for "Wave-Companion" folder in "Wave-Companion" target */,
+			);
 			path = "Wave-Companion";
 			sourceTree = "<group>";
 		};
@@ -35,9 +50,11 @@
 				52C7E6482F150CC900588A64 /* FirebaseAnalytics in Frameworks */,
 				52C7E64E2F150CC900588A64 /* FirebaseCrashlytics in Frameworks */,
 				52C7E64C2F150CC900588A64 /* FirebaseCore in Frameworks */,
+				5246248A2F1E81C200D6EED0 /* GoogleSignInSwift in Frameworks */,
 				52C7E6502F150CC900588A64 /* FirebaseFirestore in Frameworks */,
 				52C7E64A2F150CC900588A64 /* FirebaseAuth in Frameworks */,
 				52C7E6522F150CC900588A64 /* FirebaseStorage in Frameworks */,
+				524624882F1E81C200D6EED0 /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,6 +103,8 @@
 				52C7E64D2F150CC900588A64 /* FirebaseCrashlytics */,
 				52C7E64F2F150CC900588A64 /* FirebaseFirestore */,
 				52C7E6512F150CC900588A64 /* FirebaseStorage */,
+				524624872F1E81C200D6EED0 /* GoogleSignIn */,
+				524624892F1E81C200D6EED0 /* GoogleSignInSwift */,
 			);
 			productName = "Wave-Companion";
 			productReference = 525A56562ED5F55C009E722A /* Wave-Companion.app */;
@@ -117,6 +136,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				52C7E6462F150CC900588A64 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				524624862F1E81C200D6EED0 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 525A56572ED5F55C009E722A /* Products */;
@@ -273,10 +293,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Wave-Companion/Wave-Companion.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Wave-Companion/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -304,10 +326,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Wave-Companion/Wave-Companion.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Wave-Companion/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -354,6 +378,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		524624862F1E81C200D6EED0 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.1.0;
+			};
+		};
 		52C7E6462F150CC900588A64 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
@@ -365,6 +397,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		524624872F1E81C200D6EED0 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 524624862F1E81C200D6EED0 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		524624892F1E81C200D6EED0 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 524624862F1E81C200D6EED0 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
 		52C7E6472F150CC900588A64 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 52C7E6462F150CC900588A64 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
