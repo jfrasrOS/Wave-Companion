@@ -16,12 +16,31 @@ struct RegistrationProfileView: View {
 
             VStack(spacing: 20) {
                 ScrollView {
-                    VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 28) {
+                        
+                        // Titre + sous-texte
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Faisons connaissance !")
+                                .font(.title)
+                                .fontWeight(.bold)
+                              
+                                                    
+                            Text("Pas d’inquiétude, on utilise ça seulement pour te retrouver sur les spots et personnaliser ton expérience.")
+                                .font(.subheadline)
+                                .fixedSize(horizontal: false, vertical: true) // pour que le texte fasse un retour à la ligne si nécessaire
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom)
 
                         // Prénom
                         TextField("Prénom", text: $registrationVM.data.name)
                             .padding()
-                            .background(RoundedRectangle(cornerRadius: 25).fill(Color.white))
+
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color(.systemGray6))
+                            )
+                           
 
                         // Nationalité
                         NavigationLink {
@@ -35,7 +54,10 @@ struct RegistrationProfileView: View {
                                 Image(systemName: "chevron.right")
                             }
                             .padding()
-                            .background(RoundedRectangle(cornerRadius: 25).fill(Color.white))
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color(.systemGray6))
+                            )
                         }
                     }
                     .padding()
@@ -46,10 +68,15 @@ struct RegistrationProfileView: View {
                     continueToNextStep()
                 } label: {
                     Text("Continuer")
-                        .foregroundColor(.white)
+                        .font(.headline)
+                        .foregroundColor(isFormValid ? Color.white : AppColors.primary)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(isFormValid ? Color.orange : Color.gray)
+                        .background(isFormValid ? AppColors.action : Color.white )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 25)
+                                .stroke(isFormValid ? Color.clear : AppColors.primary, lineWidth: 2)
+                        )
                         .cornerRadius(25)
                         .padding(.horizontal)
                 }
@@ -57,7 +84,6 @@ struct RegistrationProfileView: View {
             }
             .padding(.top)
         }
-        .navigationTitle("Profil")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -75,3 +101,8 @@ struct RegistrationProfileView: View {
     }
 }
 
+#Preview {
+    RegistrationProfileView()
+        .environmentObject(RegistrationViewModel())
+        .environmentObject(SessionManager())
+}

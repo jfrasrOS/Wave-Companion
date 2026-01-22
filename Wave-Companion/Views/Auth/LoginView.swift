@@ -16,38 +16,54 @@ struct LoginView: View {
 
             VStack(spacing: 28) {
 
-                Spacer()
+                
 
                 Text("Se connecter")
                     .font(.title.bold())
+                Spacer()
+                // Social Sign-In
+                VStack(spacing: 16) {
+                    Button {
+                        // Apple Sign-In (plus tard)
+                    } label: {
+                        HStack {
+                            Image(systemName: "applelogo")
+                            Text("Continuer avec Apple")
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.black)
+                        .cornerRadius(14)
+                    }
 
-                // Google
-                Button {
-                    Task {
-                        await loginVM.loginWithGoogle(
+                    // Google
+                    Button {
+                        Task { await loginVM.loginWithGoogle(
                             session: session,
                             registrationVM: registrationVM
+                        ) }
+                    } label: {
+                        HStack {
+                            Image("google_icon")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                            Text("Continuer avec Google")
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.gray.opacity(0.4))
                         )
                     }
-                } label: {
-                    HStack {
-                        Image("google_icon")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-
-                        Text("Continuer avec Google")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white)
-                    .foregroundColor(.black)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color.gray.opacity(0.4))
-                    )
                 }
-
+                .padding(.horizontal)
+               
                 // Divider
                 HStack {
                     Rectangle().frame(height: 1).foregroundColor(.gray.opacity(0.3))
@@ -87,17 +103,22 @@ struct LoginView: View {
                         }
                     } label: {
                         Text("Se connecter")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .font(.headline)
+                            .foregroundColor(email.isEmpty || password.isEmpty ? AppColors.primary : .white)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(
                                 email.isEmpty || password.isEmpty
-                                ? Color.gray
-                                : Color(hex: "#3F9AAE")
+                                    ? Color.white
+                                    : AppColors.action
                             )
-                            .cornerRadius(14)
-                    }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 25)
+                                    .stroke(email.isEmpty || password.isEmpty ? AppColors.primary : Color.clear, lineWidth: 2)
+                            )
+                            .cornerRadius(25)
+                            .padding(.top)
+                }
                     .disabled(email.isEmpty || password.isEmpty)
                 }
 
@@ -120,5 +141,11 @@ struct LoginView: View {
             }
         }
     }
+}
+
+#Preview {
+    LoginView()
+        .environmentObject(RegistrationViewModel())
+        .environmentObject(SessionManager())
 }
 

@@ -24,12 +24,16 @@ struct RegistrationSurfLevelView: View {
 
             VStack(spacing: 0) {
                 
-                //Question en haut
-                Text("Quelle est ton niveau ?")
-                    .font(.title2.bold())
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 20)
-                    .padding(.bottom, 10)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Ton niveau de surf ?")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    
+                    Text("Pour que tu puisses rejoindre les bonnes sessions, rencontrer des surfeurs comme toi et suivre tes progrès.")
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 
                 // Niveau catégorie
                 HStack(spacing: 12) {
@@ -40,7 +44,7 @@ struct RegistrationSurfLevelView: View {
                             }
                         } label: {
                             Text(category)
-                                .font(.subheadline) // Réduit la taille pour ne pas chevaucher
+                                .font(.subheadline)
                                 .fontWeight(selectedCategory == category ? .bold : .regular)
                                 .padding(.vertical, 6)
                                 .padding(.horizontal, 14)
@@ -52,11 +56,11 @@ struct RegistrationSurfLevelView: View {
                                                 .matchedGeometryEffect(id: "highlight", in: animationNamespace)
                                         } else {
                                             RoundedRectangle(cornerRadius: 12)
-                                                .fill(Color.gray.opacity(0.2))
+                                                .stroke( AppColors.primary, lineWidth: 2)
                                         }
                                     }
                                 )
-                                .foregroundColor(selectedCategory == category ? .white : .black)
+                                .foregroundColor(selectedCategory == category ? .white : AppColors.primary)
                         }
                     }
                 }
@@ -120,12 +124,16 @@ struct RegistrationSurfLevelView: View {
                     vm.next(.board)
                 } label: {
                     Text("Continuer")
-                        .foregroundColor(vm.data.surfLevel == nil ? Color(hex: "#EF5B38") : Color.white)
+                        .foregroundColor(vm.data.surfLevel == nil ? AppColors.primary : Color.white)
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(vm.data.surfLevel == nil ? Color.white : Color(hex: "#EF5B38"))
+                        .background(vm.data.surfLevel == nil ? Color.white : AppColors.action )
                         .cornerRadius(25)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 25)
+                                .stroke(vm.data.surfLevel == nil ? AppColors.primary : Color.clear, lineWidth: 2)
+                        )
                 }
                 .disabled(vm.data.surfLevel == nil)
                 .padding()

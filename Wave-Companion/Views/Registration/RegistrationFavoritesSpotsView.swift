@@ -40,9 +40,19 @@ struct RegistrationFavoritesSpotsView: View {
 
             VStack(spacing: 16) {
 
-                Text("Choisis tes spots")
-                    .font(.title.bold())
-                    .padding(.top)
+                // Titre + sous-texte
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Allez, choisis tes spots")
+                        .font(.title)
+                        .fontWeight(.bold)
+                      
+                                            
+                    Text("Choisis jusqu’à 3 spots pour personnaliser ton profil et affiner ton expérience dès le départ.")
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true) // pour que le texte fasse un retour à la ligne si nécessaire
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
 
                 // Picker pour le pays
                 Picker("Pays", selection: $selectedCountry) {
@@ -120,11 +130,16 @@ struct RegistrationFavoritesSpotsView: View {
 
                 } label: {
                     Text("Terminer l’inscription")
-                        .foregroundColor(.white)
+                        .foregroundColor(selectedSpotIDs.isEmpty ? AppColors.primary : Color.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(selectedSpotIDs.isEmpty ? Color.gray : Color.blue)
-                        .cornerRadius(12)
+                        .background(selectedSpotIDs.isEmpty ? Color.white : AppColors.action)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 25)
+                                .stroke(selectedSpotIDs.isEmpty ? AppColors.primary : Color.clear , lineWidth: 2)
+                        )
+                        .cornerRadius(25)
+                        .padding(.horizontal)
                 }
                 .disabled(selectedSpotIDs.isEmpty)
 

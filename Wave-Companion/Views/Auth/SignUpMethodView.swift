@@ -10,14 +10,15 @@ struct SignUpMethodView: View {
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            
 
             VStack(spacing: 32) {
-                Spacer()
-
                 Text("Créer un compte")
                     .font(.title.bold())
                     .multilineTextAlignment(.center)
+                
+                Spacer()
+
 
                 // Social Sign-In
                 VStack(spacing: 16) {
@@ -94,16 +95,26 @@ struct SignUpMethodView: View {
                         Task { await vm.signUpWithEmailPassword(email: email, password: password) }
                     } label: {
                         Text("Continuer avec email")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(email.isEmpty || password.isEmpty ? Color.gray : Color(hex: "#3F9AAE"))
-                            .cornerRadius(14)
+                                .font(.headline)
+                                .foregroundColor(email.isEmpty || password.isEmpty ? AppColors.primary : .white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(
+                                    email.isEmpty || password.isEmpty
+                                        ? Color.white
+                                        : AppColors.action
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .stroke(email.isEmpty || password.isEmpty ? AppColors.primary : Color.clear, lineWidth: 2)
+                                )
+                                .cornerRadius(25)
+                                .padding(.top)
                     }
                     .disabled(email.isEmpty || password.isEmpty)
                 }
                 .padding(.horizontal)
+                
 
                 // Affichage erreur
                 if let error = vm.errorMessage {
@@ -124,7 +135,7 @@ struct SignUpMethodView: View {
                             .environmentObject(vm)
                     } label: {
                         Text("Se connecter")
-                            .foregroundColor(Color(hex: "#3F9AAE"))
+                            .foregroundColor(Color(AppColors.primary))
                             .fontWeight(.semibold)
                     }
                 }
@@ -133,5 +144,11 @@ struct SignUpMethodView: View {
             .padding()
         }
     }
+}
+
+#Preview {
+    SignUpMethodView()
+        .environmentObject(RegistrationViewModel())
+        .environmentObject(SessionManager())
 }
 

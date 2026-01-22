@@ -63,15 +63,24 @@ struct Wave_CompanionApp: App {
     
    
     // Vérifie si l'utilisateur est déjà connecté sur Firebase
-        private func checkAuthentication() {
-            DispatchQueue.main.async {
-                if let firebaseUser = Auth.auth().currentUser {
-                    // Utilisateur déjà authentifié → direct ProfileView
-                    registrationVM.data.email = firebaseUser.email ?? ""
-                    registrationVM.path = [.profile]
-                }
-                isLoading = false
-            }
+    private func checkAuthentication() {
+        let minimumSplashDuration: Double = 3
+
+        let startTime = Date()
+
+        // Vérification Firebase
+        if let firebaseUser = Auth.auth().currentUser {
+            registrationVM.data.email = firebaseUser.email ?? ""
+            registrationVM.path = [.profile]
         }
+
+        let elapsed = Date().timeIntervalSince(startTime)
+        let remaining = max(0, minimumSplashDuration - elapsed)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + remaining) {
+            isLoading = false
+        }
+    }
+
 }
 
