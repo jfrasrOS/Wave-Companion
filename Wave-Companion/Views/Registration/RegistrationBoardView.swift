@@ -4,8 +4,9 @@ struct RegistrationBoardView: View {
 
     @EnvironmentObject var vm: RegistrationViewModel
 
-
-    private let boardTypes = ["Shortboard", "Fish", "Mid-Length", "Longboard", "Softboard"]
+    private let boardTypes = [
+        "Shortboard", "Fish", "Mid-Length", "Longboard", "Softboard"
+    ]
 
     private let boardSizes = [
         "5'2\"", "5'4\"", "5'6\"", "5'8\"", "5'10\"",
@@ -28,161 +29,110 @@ struct RegistrationBoardView: View {
         ("Noir", .black)
     ]
 
-    private let gridColumns = [GridItem(.flexible()), GridItem(.flexible())]
+    private let gridColumns = [
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
 
     var body: some View {
-        ZStack {
-         
-              
-            VStack(spacing: 20) {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        
-                        // Titre + sous-texte
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("C’est quoi ta planche ?")
-                                .font(.title)
-                                .fontWeight(.bold)
-                            
-                            
-                            Text("Taille, type, couleur… juste ce qu’il faut pour qu’on puisse te reconnaître sur les spots.")
-                                .font(.subheadline)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        
-                        // Type de planche
-                        Card {
-                            Text("Type de planche")
-                                .font(.headline)
-                            LazyVGrid(columns: gridColumns, spacing: 12) {
-                                ForEach(boardTypes, id: \.self) { type in
-                                    Text(type)
-                                        .font(.subheadline.bold())
-                                        .frame(maxWidth: .infinity, minHeight: 48)
-                                        .background(vm.data.boardType == type ? Color.blue : Color.gray.opacity(0.15))
-                                        .foregroundColor(vm.data.boardType == type ? .white : .primary)
-                                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.blue.opacity(0.3)))
-                                        .onTapGesture {
-                                            withAnimation(.spring(response: 0.3)) {
-                                                vm.data.boardType = type
-                                            }
-                                        }
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        
-                        // Taille
-                        Card {
-                            Text("Taille")
-                                .font(.headline)
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(boardSizes, id: \.self) { size in
-                                        Text(size)
-                                            .font(.subheadline.bold())
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 10)
-                                            .background(vm.data.boardSize == size ? Color.blue : Color.gray.opacity(0.2))
-                                            .foregroundColor(vm.data.boardSize == size ? .white : .primary)
-                                            .clipShape(Capsule())
-                                            .onTapGesture {
-                                                withAnimation(.easeInOut) {
-                                                    vm.data.boardSize = size
-                                                }
-                                            }
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                        
-                        
-                        Card {
-                            Text("Couleur")
-                                .font(.headline)
-                            
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 16) {
-                                    ForEach(boardColors, id: \.name) { item in
-                                        ZStack {
-                                            Circle()
-                                                .fill(item.color)
-                                                .frame(width: 44, height: 44)
-                                            Circle()
-                                                .stroke(vm.data.boardColor == item.name ? Color.blue : Color.clear, lineWidth: 4)
-                                                .frame(width: 44, height: 44)
-                                        }
-                                        .scaleEffect(vm.data.boardColor == item.name ? 1.1 : 1.0)
-                                        .padding(4)
-                                        .onTapGesture {
-                                            withAnimation(.spring()) {
-                                                vm.data.boardColor = item.name
-                                            }
-                                        }
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                        
-                        Spacer(minLength: 100)
-                    }
-                }
-                .padding(.horizontal)
-            }
-        }
-        .safeAreaInset(edge: .bottom) {
-            Button {
+        RegistrationStepContainer(
+            title: "C’est quoi ta planche ?",
+            subtitle: "Type, taille et couleur pour te reconnaître à l’eau.",
+            currentStep: 2,
+            totalSteps: 5,
+            isActionEnabled: isFormValid,
+            onAction: {
                 vm.next(.spots)
-            } label: {
-                Text("Continuer")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? AppColors.action : Color.white)
-                    .foregroundColor(isFormValid ? Color.white : AppColors.primary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 25)
-                            .stroke(isFormValid ? Color.clear : AppColors.primary, lineWidth: 2)
-                    )
-                    .cornerRadius(25)
-                    .padding(.horizontal)
-                    .padding(.top, 8)
             }
-            .disabled(!isFormValid)
+        ) {
+            boardTypeSection
+            boardSizeSection
+            boardColorSection
         }
     }
 
-    // Validation
+ 
+
+    private var boardTypeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Type de planche")
+                .font(.headline)
+
+            LazyVGrid(columns: gridColumns, spacing: 12) {
+                ForEach(boardTypes, id: \.self) { type in
+                    SelectableChip(
+                        title: type,
+                        isSelected: vm.data.boardType == type
+                    ) {
+                        withAnimation(.spring(response: 0.3)) {
+                            vm.data.boardType = type
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var boardSizeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Taille")
+                .font(.headline)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(boardSizes, id: \.self) { size in
+                        SelectableCapsule(
+                            title: size,
+                            isSelected: vm.data.boardSize == size
+                        ) {
+                            withAnimation(.easeInOut) {
+                                vm.data.boardSize = size
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var boardColorSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Couleur")
+                .font(.headline)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(boardColors, id: \.name) { item in
+                        Circle()
+                            .fill(item.color)
+                            .frame(width: 44, height: 44)
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        vm.data.boardColor == item.name
+                                        ? AppColors.primary
+                                        : Color.clear,
+                                        lineWidth: 4
+                                    )
+                            )
+                            .scaleEffect(
+                                vm.data.boardColor == item.name ? 1.1 : 1.0
+                            )
+                            .onTapGesture {
+                                withAnimation(.spring()) {
+                                    vm.data.boardColor = item.name
+                                }
+                            }
+                    }
+                }
+            }
+        }
+    }
+
     private var isFormValid: Bool {
         !vm.data.boardType.isEmpty &&
         !vm.data.boardSize.isEmpty &&
         !vm.data.boardColor.isEmpty
     }
-}
-
-// Card
-struct Card<Content: View>: View {
-    let content: Content
-    init(@ViewBuilder content: () -> Content) { self.content = content() }
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            content
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-       
-    }
-}
-
-#Preview {
-    RegistrationBoardView()
-        .environmentObject(RegistrationViewModel())
 }
 

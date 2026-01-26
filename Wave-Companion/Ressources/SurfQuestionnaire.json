@@ -1,0 +1,78 @@
+{
+  "start": "q1",
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Tu as déjà pris tes premières vagues ?",
+      "answers": [
+        { "id": "q1a1", "text": "Oui", "next": "q2a" },
+        { "id": "q1a2", "text": "Pas encore", "next": "q2b" }
+      ]
+    },
+    {
+      "id": "q2a",
+      "text": "Sur une vraie vague, arrives-tu à faire ton take-off ?",
+      "answers": [
+        { "id": "q2a1", "text": "Oui", "next": "q3a" },
+        { "id": "q2a2", "text": "Pas encore", "resultLevelId": "mousse_2" }
+      ]
+    },
+    {
+      "id": "q2b",
+      "text": "Sur une vague en mousse, arrives-tu à te redresser sur la planche ?",
+      "answers": [
+        { "id": "q2b1", "text": "Oui", "next": "q3b" },
+        { "id": "q2b2", "text": "Pas encore", "resultLevelId": "mousse_1" }
+      ]
+    },
+    {
+      "id": "q3a",
+      "text": "Après ton take-off, arrives-tu plutôt à rester debout...",
+      "answers": [
+        { "id": "q3a1", "text": "Jusqu'en fin de vague", "next": "q4a" },
+        { "id": "q3a2", "text": "Quelques secondes", "resultLevelId": "bronze_1" }
+      ]
+    },
+    {
+      "id": "q3b",
+      "text": "Après t'être levé dans la mousse, arrives-tu à rester debout...",
+      "answers": [
+        { "id": "q3b1", "text": "Jusqu'en fin de mousse", "resultLevelId": "mousse_2" },
+        { "id": "q3b2", "text": "Quelques secondes", "resultLevelId": "mousse_1" }
+      ]
+    },
+    {
+      "id": "q4a",
+      "text": "Arrives-tu à prendre une direction (gauche/droite) sur la vague ?",
+      "answers": [
+        { "id": "q4a1", "text": "Oui", "next": "q5a" },
+        { "id": "q4a2", "text": "Pas encore", "resultLevelId": "bronze_2" }
+      ]
+    },
+    {
+      "id": "q5a",
+      "text": "Comment te sens-tu pour enchaîner 2 virages et rester stable sur la vague ?",
+      "answers": [
+        { "id": "q5a1", "text": "Je maîtrise", "next": "q6a" },
+        { "id": "q5a2", "text": "Je dois encore progresser", "resultLevelId": "argent_1" }
+      ]
+    },
+    {
+      "id": "q6a",
+      "text": "Peux-tu contrôler ta vitesse, effectuer un virage en haut de vague et te repositionner dans le curl ?",
+      "answers": [
+        { "id": "q6a1", "text": "Oui", "next": "q7a" },
+        { "id": "q6a2", "text": "Pas encore", "resultLevelId": "argent_2" }
+      ]
+    },
+    {
+      "id": "q7a",
+      "text": "Peux-tu réaliser des manœuvres avancées comme le floatter, roller, cut back ou tube ?",
+      "answers": [
+        { "id": "q7a1", "text": "Oui", "resultLevelId": "or_2" },
+        { "id": "q7a2", "text": "Pas encore", "resultLevelId": "or_1" }
+      ]
+    }
+  ]
+}
+

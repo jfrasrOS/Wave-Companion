@@ -64,7 +64,7 @@ struct Wave_CompanionApp: App {
    
     // Vérifie si l'utilisateur est déjà connecté sur Firebase
     private func checkAuthentication() {
-        let minimumSplashDuration: Double = 3
+        let minimumSplashDuration: Double = 2
 
         let startTime = Date()
 
