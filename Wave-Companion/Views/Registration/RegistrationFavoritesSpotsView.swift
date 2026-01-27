@@ -18,10 +18,11 @@ struct RegistrationFavoritesSpotsView: View {
         RegistrationStepContainer(
             title: "Tes spots favoris",
             subtitle: "Choisis jusqu’à 3 spots pour personnaliser ton expérience.",
-            currentStep: 4,
-            totalSteps: 5,
+            currentStep: 3,
+            totalSteps: 4,
             isActionEnabled: !selectedSpotIDs.isEmpty,
             actionTitle: "Terminer l’inscription",
+            onBack: { vm.back() },
             onAction: finishRegistration
         ) {
             countryPicker

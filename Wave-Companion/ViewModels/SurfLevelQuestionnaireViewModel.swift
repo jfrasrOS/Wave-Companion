@@ -20,11 +20,16 @@ final class SurfLevelQuestionnaireViewModel: ObservableObject {
         questionnaire.questions.first { $0.id == currentQuestionId }
     }
 
+    // Appelé quand l'utilisateur selectionne une réponse
     func selectAnswer(_ answer: SurfAnswer) {
+        
+        // Save la question actuelle pour pouvoir revenir en arrière
         history.append(currentQuestionId)
 
+        // Si la réponse donne directement le niveau estimé
         if let resultId = answer.resultLevelId {
             resultingLevel = levels.first { $0.id == resultId }
+        // Sinon question suivante
         } else if let nextId = answer.next {
             withAnimation {
                 currentQuestionId = nextId
@@ -33,11 +38,19 @@ final class SurfLevelQuestionnaireViewModel: ObservableObject {
     }
 
     func goBack() {
+        // Récupère la dernière question visitée
         guard let last = history.popLast() else { return }
         withAnimation {
             currentQuestionId = last
             resultingLevel = nil
         }
     }
+    
+    func reset() {
+            // Reviens à la 1ere question
+            currentQuestionId = questionnaire.start
+            history.removeAll()
+            resultingLevel = nil
+        }
 }
 

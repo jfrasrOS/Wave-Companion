@@ -39,8 +39,9 @@ struct RegistrationBoardView: View {
             title: "C’est quoi ta planche ?",
             subtitle: "Type, taille et couleur pour te reconnaître à l’eau.",
             currentStep: 2,
-            totalSteps: 5,
+            totalSteps: 4,
             isActionEnabled: isFormValid,
+            onBack: { vm.back() },
             onAction: {
                 vm.next(.spots)
             }

@@ -28,6 +28,11 @@ final class RegistrationViewModel: ObservableObject {
         path.append(step)
     }
     
+    func back() {
+            guard !path.isEmpty else { return }
+            path.removeLast()
+        }
+    
     func reset() {
         data = RegistrationData()
         path.removeAll()

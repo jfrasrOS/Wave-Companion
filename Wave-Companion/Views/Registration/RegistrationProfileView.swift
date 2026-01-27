@@ -18,6 +18,7 @@ struct RegistrationProfileView: View {
             currentStep: 0,
             totalSteps: 4,
             isActionEnabled: isFormValid,
+            onBack: { registrationVM.back() },
             onAction: continueToNextStep
         ) {
 
@@ -35,6 +36,13 @@ struct RegistrationProfileView: View {
                     .environmentObject(registrationVM)
             } label: {
                 HStack {
+                    
+                            // Drapeau (uniquement si un pays est sélectionné)
+                            if let country = registrationVM.selectedCountry {
+                                Text(country.flag)
+                                    .font(.title3)
+                            }
+
                     Text(registrationVM.selectedCountry?.name ?? "Choisir une nationalité")
                         .foregroundColor(registrationVM.selectedCountry == nil ? .gray : .primary)
                     Spacer()

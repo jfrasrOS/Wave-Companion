@@ -8,6 +8,7 @@ struct CountryService {
         
         // Récupére tous les pays connus dans le système
         Locale.Region.isoRegions
+            .filter { $0.identifier.count == 2 } // filtre continents
             .compactMap { region in
                 
                 // Code pays

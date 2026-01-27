@@ -1,11 +1,3 @@
-//
-//  RegistrationProgressView.swift
-//  Wave-Companion
-//
-//  Created by John on 26/01/2026.
-//
-
-import Foundation
 import SwiftUI
 
 struct RegistrationProgressView: View {
@@ -25,5 +17,11 @@ struct RegistrationProgressView: View {
                     .animation(.easeInOut(duration: 0.3), value: currentStep)
             }
         }
+        .frame(maxWidth: .infinity)
+        .frame(alignment: .center)
     }
+}
+
+#Preview {
+    RegistrationProgressView(currentStep: 1, totalSteps: 4)
 }

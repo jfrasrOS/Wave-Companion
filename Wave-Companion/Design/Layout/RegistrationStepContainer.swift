@@ -1,5 +1,6 @@
 import SwiftUI
 
+// Container pour tout le parcours d'inscription
 struct RegistrationStepContainer<Content: View>: View {
 
     let title: String
@@ -9,6 +10,7 @@ struct RegistrationStepContainer<Content: View>: View {
     let isActionEnabled: Bool
     let actionTitle: String
     let onAction: () -> Void
+    let onBack: (() -> Void)?
     let content: Content
 
     init(
@@ -18,6 +20,7 @@ struct RegistrationStepContainer<Content: View>: View {
         totalSteps: Int,
         isActionEnabled: Bool,
         actionTitle: String = "Continuer",
+        onBack: (() -> Void)? = nil,
         onAction: @escaping () -> Void,
         @ViewBuilder content: () -> Content
     ) {
@@ -27,76 +30,91 @@ struct RegistrationStepContainer<Content: View>: View {
         self.totalSteps = totalSteps
         self.isActionEnabled = isActionEnabled
         self.actionTitle = actionTitle
+        self.onBack = onBack
         self.onAction = onAction
         self.content = content()
     }
 
     var body: some View {
-        ZStack {
-           
-
-            VStack(spacing: 0) {
-
-                header
-
-                ScrollView {
-                    VStack(spacing: 24) {
-                        content
+        VStack(spacing: 0) {
+            
+            // HEADER -> Btn back custom + progress bar
+            ZStack{
+                HStack {
+                    if let onBack = onBack {
+                        Button(action: onBack) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(AppColors.primary)
+                                .padding(8)
+                                .background(Color(.systemGray6))
+                                .clipShape(Circle())
+                        }
                     }
-                    .padding()
-                    .padding(.bottom, 120)
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        )
-                    )
+                    Spacer()
                 }
-
-                actionButton
+                .padding()
+               
+                
+                RegistrationProgressView(currentStep: currentStep, totalSteps: totalSteps)
+                    .frame(height: 6)
+                    .padding(.leading, onBack != nil ? 12 : 0)
+                
             }
-        }
-        .animation(.easeInOut(duration: 0.35), value: currentStep)
-    }
+               
+            
 
+           // TITRE + SOUS-TITRE
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.title.bold())
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineSpacing(4)
+            }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            
+            Spacer(minLength: 20)
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.title.bold())
-
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
-            RegistrationProgressView(
-                currentStep: currentStep,
-                totalSteps: totalSteps
-            )
-        }
-        .padding()
-    }
-
-    private var actionButton: some View {
-        Button(action: onAction) {
-            Text(actionTitle)
-                .font(.headline)
-                .foregroundColor(isActionEnabled ? .white : AppColors.primary)
-                .frame(maxWidth: .infinity)
+          
+            // CONTENU PRINCIPAL
+            ScrollView {
+                VStack(spacing: 32) {
+                    content
+                }
                 .padding()
-                .background(isActionEnabled ? AppColors.action : Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(isActionEnabled ? Color.clear : AppColors.primary, lineWidth: 2)
+                .padding(.top, 12)
+                // Animation entre les changements 
+                .transition(
+                    .asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    )
                 )
-                .cornerRadius(24)
-                .padding()
-        }
-        .disabled(!isActionEnabled)
-    }
+            }
 
-    private var progress: Double {
-        Double(currentStep + 1) / Double(totalSteps)
+            // Bouton fixe
+            Button(action: onAction) {
+                Text(actionTitle)
+                    .font(.headline)
+                    .foregroundColor(isActionEnabled ? .white : AppColors.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(isActionEnabled ? AppColors.action : Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(isActionEnabled ? Color.clear : AppColors.primary, lineWidth: 2)
+                    )
+                    .cornerRadius(24)
+                    .padding()
+            }
+            .disabled(!isActionEnabled)
+        }
+        .navigationBarBackButtonHidden(true)
     }
 }
+
+
 
