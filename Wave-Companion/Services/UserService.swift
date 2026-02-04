@@ -26,6 +26,7 @@ final class UserService {
             "nationality": user.nationality,
             "surfLevelId": user.surfLevelId,
             "boardType": user.boardType,
+            "boardSize": user.boardSize,
             "boardColor": user.boardColor,
             "favoriteSpotIDs": user.favoriteSpotIDs,
             "createdAt": Timestamp()
