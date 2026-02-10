@@ -36,27 +36,17 @@ struct Wave_CompanionApp: App {
     
     var body: some Scene {
         WindowGroup {
-            
-            // Affiche le chargement
-            if isLoading {
-                LoadingView()
-                    .onAppear {
-                        // Vérifie si User est dèjà connecté sur Firebase
-                        checkAuthentication()
-                    }
-                // Chargement terminé, affichage des views
-            } else {
-                // User connecté + inscription complète → HomeView
+            Group {
                 if session.isAuthenticated {
-                    HomeView()
-                        .environmentObject(session)
-                        .environmentObject(registrationVM)
+                    MainTabContainer()
                 } else {
-                    // Sinon -> AuthChoice pour connexion/inscription
                     AuthChoiceView()
-                        .environmentObject(session)
-                        .environmentObject(registrationVM)
                 }
+            }
+            .environmentObject(session)
+            .environmentObject(registrationVM)
+            .onAppear {
+                checkAuthentication()
             }
         }
     }
@@ -64,9 +54,6 @@ struct Wave_CompanionApp: App {
    
     // Vérifie si l'utilisateur est déjà connecté sur Firebase
     private func checkAuthentication() {
-        let minimumSplashDuration: Double = 2
-
-        let startTime = Date()
 
         // Vérification Firebase
         if let firebaseUser = Auth.auth().currentUser {
@@ -74,12 +61,6 @@ struct Wave_CompanionApp: App {
             registrationVM.path = [.profile]
         }
 
-        let elapsed = Date().timeIntervalSince(startTime)
-        let remaining = max(0, minimumSplashDuration - elapsed)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + remaining) {
-            isLoading = false
-        }
     }
 
 }
