@@ -16,15 +16,7 @@ enum TabItem: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
-        switch self {
-        case .home: return "Accueil"
-        case .discover: return "Découvrir"
-        case .sessions: return "Sessions"
-        case .friends: return "Amis"
-        case .profile: return "Profil"
-        }
-    }
+  
 
     var icon: String {
         switch self {

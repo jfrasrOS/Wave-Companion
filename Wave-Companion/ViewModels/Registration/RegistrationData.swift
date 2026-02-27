@@ -10,6 +10,7 @@ struct RegistrationData {
     var profileImage: String = ""
     var nationality: String = ""
     var surfLevel: SurfLevelModel? = nil
+    var completedSkills: [String] = []
     var boardType: String = ""
     var boardSize: String = ""
     var boardColor: String = ""
@@ -28,6 +29,7 @@ struct RegistrationData {
             email: email,
             nationality: nationality,
             surfLevelId: surfLevel.id,
+            completedSkills: completedSkills,
             boardType: boardType,
             boardSize: boardSize,
             boardColor: boardColor,

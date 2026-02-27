@@ -69,5 +69,41 @@ final class UserService {
 
         return url.absoluteString
     }
+    
+    // Récupérer un user par UID
+    func fetchUser(uid: String) async throws -> User? {
+        let snapshot = try await db.collection("users").document(uid).getDocument()
+        guard let data = snapshot.data() else { return nil }
+        
+        return User(
+            id: data["id"] as? String ?? uid,
+            name: data["name"] as? String ?? "",
+            email: data["email"] as? String ?? "",
+            nationality: data["nationality"] as? String ?? "",
+            surfLevelId: data["surfLevelId"] as? String ?? "",
+            completedSkills: data["completedSkills"] as? [String] ?? [],
+            boardType: data["boardType"] as? String ?? "",
+            boardSize: data["boardSize"] as? String ?? "",
+            boardColor: data["boardColor"] as? String ?? "",
+            favoriteSpotIDs: data["favoriteSpotIDs"] as? [String] ?? [],
+            profileImage: data["profileImage"] as? String
+        )
+    }
+    
+    // Met à jour uniquement les champs fournis
+    func updateUserProgress(
+        uid: String,
+        surfLevelId: String,
+        completedSkills: [String]
+    ) async throws {
+
+        try await Firestore.firestore()
+            .collection("users")
+            .document(uid)
+            .updateData([
+                "surfLevelId": surfLevelId,
+                "completedSkills": completedSkills
+            ])
+    }
 }
 

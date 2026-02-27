@@ -29,12 +29,7 @@ struct CustomTabBar: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(selectedTab == tab ? AppColors.action : AppColors.primary)
                     .scaleEffect(selectedTab == tab ? 1.2 : 1.0)
-                
-                Text(tab.title)
-                    .font(.caption2)
-                    .foregroundColor(selectedTab == tab ? AppColors.action : AppColors.primary)
-                    .scaleEffect(selectedTab == tab ? 1.05 : 1.0)
-                    .opacity(selectedTab == tab ? 1 : 0.8)
+               
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)

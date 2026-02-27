@@ -9,6 +9,7 @@ struct User:Identifiable, Codable{
     var email: String
     var nationality: String
     var surfLevelId: String
+    var completedSkills: [String]
     var boardType: String
     var boardSize: String 
     var boardColor: String
