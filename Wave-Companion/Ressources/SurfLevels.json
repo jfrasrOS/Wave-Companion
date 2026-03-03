@@ -34,7 +34,7 @@
       "Conserver son équilibre debout en bas de vague"
     ],
     "order": 3,
-    "category": "Débutant"
+    "category": "Intermédiaire"
   },
   {
     "id": "bronze_2",
@@ -47,7 +47,7 @@
       "S'orienter vers la droite ou vers la gauche dans les mousses après le take off"
     ],
     "order": 4,
-    "category": "Débutant"
+    "category": "Intermédiaire"
   },
   {
     "id": "argent_1",
@@ -71,7 +71,7 @@
       "Accentuer le bottom turn en position de face ou de dos"
     ],
     "order": 6,
-    "category": "Intermédiaire"
+    "category": "Confirmé"
   },
   {
     "id": "or_1",
@@ -84,7 +84,7 @@
       "Se replacer dans le curl"
     ],
     "order": 7,
-    "category": "Expert"
+    "category": "Confirmé"
   },
   {
     "id": "or_2",

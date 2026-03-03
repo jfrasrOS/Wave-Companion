@@ -3,6 +3,7 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var homeVM = HomeViewModel()
+    @StateObject private var sessionVM = SessionDashboardViewModel()
     
     //Preview
     init(homeVM: HomeViewModel = HomeViewModel()) {
@@ -15,13 +16,22 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     if homeVM.user != nil {
                         NavigationLink {
-                            ProgressionView(vm: ProgressionViewModel(homeVM: homeVM))
-                        } label: {
-                            SurfLevelCard(vm: homeVM)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    Spacer()
+                                    ProgressionView(vm: ProgressionViewModel(homeVM: homeVM))
+                                } label: {
+                                    SurfLevelCard(vm: homeVM)
+                                }
+                                .buttonStyle(.plain)
+
+                                // SESSION CARD
+                                NavigationLink {
+                                    // future view
+                                } label: {
+                                    SessionCard(vm: sessionVM)
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            Spacer()
                 }
                 .padding(.top)
             }
