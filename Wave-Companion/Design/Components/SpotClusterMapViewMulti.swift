@@ -1,43 +1,53 @@
 //
-//  SpotClusterMapView.swift
+//  SpotClusterMapViewMulti.swift
 //  Wave-Companion
 //
-//  Created by John on 05/02/2026.
+//  Created by John on 06/03/2026.
 //
 
+import Foundation
 import SwiftUI
 import MapKit
 
-// View MapKit avec clustering des spots et sélection
-struct SpotClusterMapView: UIViewRepresentable {
 
+// MapView pour le choix des spots favoris (inscription)
+struct SpotClusterMapViewMulti: UIViewRepresentable {
+    
     let spots: [Spot]
+    let hasSession: (Spot) -> Bool
+    let maxSelection: Int
+    
     @Binding var selectedSpotIDs: Set<String>
     @Binding var focusedSpotID: String?
-
+    
     func makeUIView(context: Context) -> MKMapView {
         let map = MKMapView()
         map.delegate = context.coordinator
         map.isRotateEnabled = false
         map.showsCompass = false
         map.showsScale = false
-
-        // Enregistrement des vues pour annotations et clusters
+        
+        // Annotations
         map.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: "spot")
+        
+        // Vue pour les clusters
         map.register(MKMarkerAnnotationView.self,
                      forAnnotationViewWithReuseIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier)
-
-        // Centrer sur la France par défaut
+        
+        // Région initiale (centrée sur la France)
         map.setRegion(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 46.6, longitude: 2.4),
                                          span: MKCoordinateSpan(latitudeDelta: 7, longitudeDelta: 7)),
                       animated: false)
         return map
     }
-
+    
+    // Mise à jour de la map si changement
     func updateUIView(_ map: MKMapView, context: Context) {
-        // On supprime toutes les annotations pour les mettre à jour
+        
+        // Supprime tout
         map.removeAnnotations(map.annotations)
-
+        
+        // crée une annotation pour chaque spot
         let annotations = spots.map { spot -> MKPointAnnotation in
             let a = MKPointAnnotation()
             a.title = spot.name
@@ -45,24 +55,26 @@ struct SpotClusterMapView: UIViewRepresentable {
             a.coordinate = spot.coordinate
             return a
         }
-
+        
+        // Ajoute les annoations à la map
         map.addAnnotations(annotations)
     }
-
+    
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-
-    final class Coordinator: NSObject, MKMapViewDelegate {
-        let parent: SpotClusterMapView
-
-        init(_ parent: SpotClusterMapView) {
+    
+    class Coordinator: NSObject, MKMapViewDelegate {
+        let parent: SpotClusterMapViewMulti
+        
+        init(_ parent: SpotClusterMapViewMulti) {
             self.parent = parent
         }
-
+        
+        // crée les annoations (pins/clusters)
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-
-            // Cluster
+            
+            // Cas 1 : cluster (plusieurs spots regroupés)
             if let cluster = annotation as? MKClusterAnnotation {
                 let view = mapView.dequeueReusableAnnotationView(
                     withIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier,
@@ -70,55 +82,61 @@ struct SpotClusterMapView: UIViewRepresentable {
                 ) as! MKMarkerAnnotationView
                 view.canShowCallout = false
                 view.clusteringIdentifier = "spots"
-                view.markerTintColor = .systemBlue
+                
+                view.markerTintColor = .systemGray
                 view.glyphText = "\(cluster.memberAnnotations.count)"
                 view.glyphTintColor = .white
                 view.displayPriority = .required
                 return view
             }
-
-            // Spot individuel
-            guard let annotation = annotation as? MKPointAnnotation else { return nil }
-
+            
+            // Cas 2 : pin individuelle
+            guard let annotation = annotation as? MKPointAnnotation,
+                  let spot = parent.spots.first(where: { $0.id == annotation.subtitle }) else { return nil }
+            
             let view = mapView.dequeueReusableAnnotationView(
                 withIdentifier: "spot",
                 for: annotation
             ) as! MKMarkerAnnotationView
-
+            
             view.clusteringIdentifier = "spots"
             view.canShowCallout = false
-
-            let id = annotation.subtitle ?? ""
-            let isSelected = parent.selectedSpotIDs.contains(id)
-            let isFocused = parent.focusedSpotID == id
-
+            
+            // vérifie si spot selectionné
+            let isSelected = parent.selectedSpotIDs.contains(spot.id)
+            
             view.markerTintColor = isSelected ? UIColor(AppColors.action) : .white
             view.glyphImage = UIImage(systemName: "wave.3.right")
             view.glyphTintColor = isSelected ? .white : .black
+            
+            // petit zoom si le spot est focus
+            let isFocused = parent.focusedSpotID == spot.id
             view.transform = isFocused ? CGAffineTransform(scaleX: 1.25, y: 1.25) : .identity
+            
             return view
         }
-
+        
+        // Gestion du tap sur une annotation
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-
-            // Si c'est un cluster, zoomer automatiquement sur tous les spots
+            
+            // Si on clique sur le cluster -> zoom sur la zone
             if let cluster = view.annotation as? MKClusterAnnotation {
                 let coords = cluster.memberAnnotations.map { $0.coordinate }
                 let region = MKCoordinateRegion(coords: coords)
                 mapView.setRegion(region, animated: true)
                 return
             }
-
-            // Spot isolé : sélectionner / désélectionner
+            
+            // Si on clique sur un spot
             guard let annotation = view.annotation as? MKPointAnnotation,
                   let id = annotation.subtitle else { return }
-
+            
             if parent.selectedSpotIDs.contains(id) {
                 parent.selectedSpotIDs.remove(id)
-            } else if parent.selectedSpotIDs.count < 3 {
+            } else if parent.selectedSpotIDs.count < parent.maxSelection {
                 parent.selectedSpotIDs.insert(id)
             }
-
+            
             parent.focusedSpotID = id
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             mapView.deselectAnnotation(annotation, animated: false)

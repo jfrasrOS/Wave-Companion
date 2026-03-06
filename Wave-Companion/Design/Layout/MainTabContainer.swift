@@ -18,8 +18,7 @@ struct MainTabContainer: View {
                 case .home:
                     HomeView()
                 case .discover:
-                    Text("Découvrir")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    SurfMapView()
                 case .sessions:
                     Text("Sessions")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)

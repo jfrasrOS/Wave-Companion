@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseAuth
+
 struct RegistrationFavoritesSpotsView: View {
 
     @EnvironmentObject var session: SessionManager
@@ -26,10 +27,12 @@ struct RegistrationFavoritesSpotsView: View {
             VStack(spacing: 16) {
 
                 ZStack(alignment: .topTrailing) {
-                    // Carte avec les spots
-                    SpotClusterMapView(
+
+                    
+                    SpotClusterMapViewMulti(
                         spots: spots,
-                        selectedSpotIDs: $selectedSpotIDs,
+                        hasSession: { _ in false },
+                        maxSelection: maxSelection, selectedSpotIDs: $selectedSpotIDs,
                         focusedSpotID: $focusedSpotID
                     )
                     .frame(height: 320)
@@ -50,7 +53,6 @@ struct RegistrationFavoritesSpotsView: View {
         }
     }
 
-    // Cards avec les spots selectionnés
     private var selectedSpotsCards: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 16) {
@@ -87,10 +89,4 @@ struct RegistrationFavoritesSpotsView: View {
     private var selectedSpots: [Spot] {
         spots.filter { selectedSpotIDs.contains($0.id) }
     }
-}
-
-
-#Preview {
-    RegistrationFavoritesSpotsView()
-        .environmentObject(RegistrationViewModel())
 }

@@ -39,8 +39,7 @@ struct SessionCard: View {
     }
 }
 
-// MARK: - JOINED
-
+// Rejoindre une session
 private extension SessionCard {
     
     func joinedView(_ session: SurfSession) -> some View {
@@ -113,8 +112,7 @@ private extension SessionCard {
     }
 }
 
-// MARK: - SUGGESTION
-
+// Suggestion
 private extension SessionCard {
     
     func suggestionView(_ main: SurfSession, _ others: [SurfSession]) -> some View {
@@ -245,8 +243,7 @@ private extension SessionCard {
     }
 }
 
-// MARK: - NO SESSION
-
+//Aucune session
 private extension SessionCard {
     
     var noSessionView: some View {
@@ -281,24 +278,13 @@ private extension SessionCard {
                 
                 Spacer()
                 
-                Button {
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("Voir la carte")
-                            .font(.caption.weight(.medium))
-                        Image(systemName: "chevron.right")
-                            .font(.caption2)
-                    }
-                }
-                .buttonStyle(.plain)
-                .foregroundColor(AppColors.primary)
+                
             }
         }
     }
 }
 
-// MARK: - LOCATION DISABLED
-
+// Localisation désactivée
 private extension SessionCard {
     
     var locationDisabledView: some View {
@@ -349,8 +335,7 @@ private extension SessionCard {
     }
 }
 
-// MARK: - HEADER
-
+// Header
 private extension SessionCard {
     
     func header(title: String, icon: String, color: Color) -> some View {
@@ -368,8 +353,7 @@ private extension SessionCard {
     }
 }
 
-// MARK: - AVATAR STACK
-
+// Avatar
 struct AvatarStackView: View {
     
     let imageURLs: [String]
