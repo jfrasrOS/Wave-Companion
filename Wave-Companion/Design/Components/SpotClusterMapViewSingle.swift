@@ -12,100 +12,112 @@ class SpotAnnotation: NSObject, MKAnnotation {
     }
 }
 
-// MapView pour la SurfMapView (session / spots)
+// MapView pour la SurfMapView (session / spots) en écoute de zone dynamique
 struct SpotClusterMapViewSingle: UIViewRepresentable {
-    
+
     let spots: [Spot]
     let hasSession: (Spot) -> Bool
-    
+
     @Binding var selectedSpotID: String?
     @Binding var focusedSpotID: String?
-    
+
+    @Binding var region: MKCoordinateRegion
+    var onRegionChanged: ((MKCoordinateRegion) -> Void)?
+
     func makeUIView(context: Context) -> MKMapView {
         let map = MKMapView()
         map.delegate = context.coordinator
         map.isRotateEnabled = false
         map.showsCompass = false
         map.showsScale = false
-        
+
+        // Définir une région initiale légèrement dézoomée pour la France
+        let franceCenter = CLLocationCoordinate2D(latitude: 46.6, longitude: -1.0)
+        let franceSpan = MKCoordinateSpan(latitudeDelta: 8.0, longitudeDelta: 8.0) // plus grand que 7.0 pour englober toute la France
+        let initialRegion = MKCoordinateRegion(center: franceCenter, span: franceSpan)
+
+        map.setRegion(initialRegion, animated: false)
+
         // Enregistrement des vues
         map.register(PinAnnotationView.self, forAnnotationViewWithReuseIdentifier: "pin")
         map.register(ClusterAnnotationView.self, forAnnotationViewWithReuseIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier)
-        
-        map.setRegion(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 46.6, longitude: 2.4),
-                                         span: MKCoordinateSpan(latitudeDelta: 7, longitudeDelta: 7)),
-                      animated: false)
+
         return map
     }
-    
+
     func updateUIView(_ map: MKMapView, context: Context) {
 
+        // Synchronisation des annotations
         let existing = map.annotations.compactMap { $0 as? SpotAnnotation }
         let existingIDs = Set(existing.map { $0.spot.id })
-
         let newIDs = Set(spots.map { $0.id })
 
-        // annotations à supprimer
         let toRemove = existing.filter { !newIDs.contains($0.spot.id) }
-
-        // annotations à ajouter
-        let toAdd = spots
-            .filter { !existingIDs.contains($0.id) }
-            .map { SpotAnnotation(spot: $0) }
+        let toAdd = spots.filter { !existingIDs.contains($0.id) }.map { SpotAnnotation(spot: $0) }
 
         map.removeAnnotations(toRemove)
         map.addAnnotations(toAdd)
 
-        // refresh visuel des vues existantes (sessions / sélection)
-        for annotation in existing {
-            if let view = map.view(for: annotation) as? PinAnnotationView {
-                let hasSession = hasSession(annotation.spot)
-                let isSelected = selectedSpotID == annotation.spot.id
-                view.configure(hasSession: hasSession, isSelected: isSelected)
+        // Rafraîchissement complet
+        for annotation in map.annotations {
+            if let clusterView = map.view(for: annotation) as? ClusterAnnotationView,
+               let cluster = annotation as? MKClusterAnnotation {
+                let hasSessionInCluster = cluster.memberAnnotations.contains { member in
+                    guard let spotAnnotation = member as? SpotAnnotation else { return false }
+                    return hasSession(spotAnnotation.spot)
+                }
+                clusterView.configure(memberCount: cluster.memberAnnotations.count, hasSession: hasSessionInCluster)
+            } else if let pinView = map.view(for: annotation) as? PinAnnotationView,
+                      let spotAnnotation = annotation as? SpotAnnotation {
+                let hasSession = hasSession(spotAnnotation.spot)
+                let isSelected = selectedSpotID == spotAnnotation.spot.id
+                pinView.configure(hasSession: hasSession, isSelected: isSelected)
             }
         }
+     
     }
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-    
+
     class Coordinator: NSObject, MKMapViewDelegate {
         let parent: SpotClusterMapViewSingle
-        
+
         init(_ parent: SpotClusterMapViewSingle) {
             self.parent = parent
         }
-        
+
+        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            parent.region = mapView.region
+            parent.onRegionChanged?(mapView.region)
+        }
+
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-            
-            // Cluster
+
             if let cluster = annotation as? MKClusterAnnotation {
                 let clusterView = mapView.dequeueReusableAnnotationView(
                     withIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier,
-                    for: cluster) as! ClusterAnnotationView
-                
-                // Vérifier si au moins un spot du cluster a une session
+                    for: cluster
+                ) as! ClusterAnnotationView
+
                 let hasSessionInCluster = cluster.memberAnnotations.contains { member in
                     guard let spotAnnotation = member as? SpotAnnotation else { return false }
                     return parent.hasSession(spotAnnotation.spot)
                 }
-                
+
                 clusterView.configure(memberCount: cluster.memberAnnotations.count, hasSession: hasSessionInCluster)
                 return clusterView
             }
-            
-            // Spot individuel
+
             guard let spotAnnotation = annotation as? SpotAnnotation else { return nil }
-            
             let pinView = mapView.dequeueReusableAnnotationView(withIdentifier: "pin", for: annotation) as! PinAnnotationView
             let isSelected = parent.selectedSpotID == spotAnnotation.spot.id
             let hasSession = parent.hasSession(spotAnnotation.spot)
             pinView.configure(hasSession: hasSession, isSelected: isSelected)
-            
             return pinView
         }
-        
+
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
             if let cluster = view.annotation as? MKClusterAnnotation {
                 let coords = cluster.memberAnnotations.map { $0.coordinate }
@@ -113,7 +125,7 @@ struct SpotClusterMapViewSingle: UIViewRepresentable {
                 mapView.setRegion(region, animated: true)
                 return
             }
-            
+
             guard let annotation = view.annotation as? SpotAnnotation else { return }
             parent.selectedSpotID = annotation.spot.id
             parent.focusedSpotID = annotation.spot.id

@@ -2,20 +2,20 @@ import Foundation
 import FirebaseAuth
 import Combine
 import FirebaseFirestore
+import MapKit
 
 @MainActor
 final class SessionViewModel: ObservableObject {
 
-    // Liste des spots dispo & session rcupérées depuis Firestore
+    // Liste des spots dispo
     @Published var spots: [Spot] = []
+
+    // Sessions actuellement visibles sur la carte
     @Published var sessions: [SurfSession] = []
 
-    // Spot actuellement selectionné sur la map
+    // Spot actuellement sélectionné
     @Published var selectedSpotID: String? {
-        didSet {
-            // Dès qu'un spot change, on met à jour les sessions affichés
-            updateSelectedSpotSessions()
-        }
+        didSet { updateSelectedSpotSessions() }
     }
     @Published var sessionsForSelectedSpot: [SurfSession] = []
 
@@ -25,11 +25,11 @@ final class SessionViewModel: ObservableObject {
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
 
-    // Charge les spots
     func loadSpots() {
         spots = SpotService.loadAllSpots()
     }
-    
+
+    // Vérifie si un spot a au moins une session ouverte/future
     func hasSession(for spot: Spot) -> Bool {
         sessions.contains {
             $0.latitude == spot.latitude &&
@@ -39,10 +39,20 @@ final class SessionViewModel: ObservableObject {
         }
     }
 
-    // Ecoute en temps réel les sessions
-    func startSessionListener() {
+    // Listener dynamique selon zone visible
+    func startSessionListener(for region: MKCoordinateRegion) {
         listener?.remove()
+
+        let minLat = region.center.latitude - region.span.latitudeDelta / 2
+        let maxLat = region.center.latitude + region.span.latitudeDelta / 2
+        let minLng = region.center.longitude - region.span.longitudeDelta / 2
+        let maxLng = region.center.longitude + region.span.longitudeDelta / 2
+
+        print("Nouvelle zone carte")
+        
         listener = db.collection("sessions")
+            .whereField("status", isEqualTo: "open")
+            .whereField("date", isGreaterThan: Timestamp(date: Date()))
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self else { return }
 
@@ -52,23 +62,30 @@ final class SessionViewModel: ObservableObject {
                 }
 
                 guard let docs = snapshot?.documents else { return }
+                
+                print("Sessions Firestore:", docs.count)
 
-                // Met à jour toutes les sessions
-                self.sessions = docs.compactMap { doc in
+                let allSessions = docs.compactMap { doc -> SurfSession? in
                     try? doc.data(as: SurfSession.self)
                 }
 
-                // Met à jour les sessions du spot sélectionné
+                // Filtre selon bounding box de la carte
+                self.sessions = allSessions.filter { s in
+                    s.latitude >= minLat &&
+                    s.latitude <= maxLat &&
+                    s.longitude >= minLng &&
+                    s.longitude <= maxLng
+                }
+                print("🗺 Sessions dans zone:", self.sessions.count)
                 self.updateSelectedSpotSessions()
             }
     }
 
+    // Récupère les sessions pour un spot donné
     func sessions(for spot: Spot) -> [SurfSession] {
         sessions.filter {
             $0.latitude == spot.latitude &&
-            $0.longitude == spot.longitude &&
-            $0.status == .open &&
-            $0.date > Date()
+            $0.longitude == spot.longitude
         }
     }
 
@@ -78,7 +95,6 @@ final class SessionViewModel: ObservableObject {
             sessionsForSelectedSpot = []
             return
         }
-
         sessionsForSelectedSpot = sessions(for: spot)
     }
 
@@ -97,7 +113,7 @@ final class SessionViewModel: ObservableObject {
             errorMessage = "Impossible de créer une session dans le passé"
             return
         }
-        
+
         guard let userId = Auth.auth().currentUser?.uid else {
             errorMessage = "Utilisateur non connecté"
             return
@@ -112,7 +128,6 @@ final class SessionViewModel: ObservableObject {
         defer { isLoading = false }
 
         let sessionId = UUID().uuidString
-
         let newSession = SurfSession(
             id: sessionId,
             spotName: spot.name,
@@ -127,6 +142,9 @@ final class SessionViewModel: ObservableObject {
             chatId: sessionId,
             status: .open
         )
+        // Ajout immédiat pour que l'UI réagisse
+        sessions.append(newSession)
+        updateSelectedSpotSessions()
 
         do {
             try await db.collection("sessions")
@@ -149,7 +167,6 @@ final class SessionViewModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
 
-        // Met à jour la liste des sessions après création
         updateSelectedSpotSessions()
     }
 }

@@ -5,16 +5,24 @@ struct SurfMapView: View {
 
     @StateObject private var vm = SessionViewModel()
     @State private var showingCreate = false
+    @State private var mapRegion = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 46.6, longitude: 2.4),
+        span: MKCoordinateSpan(latitudeDelta: 7, longitudeDelta: 7)
+    )
 
     var body: some View {
         ZStack(alignment: .bottom) {
 
-            // Carte avec clusters et sélection single
+            // Carte avec clusters et sélection
             SpotClusterMapViewSingle(
                 spots: vm.spots,
                 hasSession: { vm.hasSession(for: $0) },
                 selectedSpotID: $vm.selectedSpotID,
-                focusedSpotID: $vm.selectedSpotID
+                focusedSpotID: $vm.selectedSpotID,
+                region: $mapRegion,
+                onRegionChanged: { region in
+                    vm.startSessionListener(for: region)
+                }
             )
             .edgesIgnoringSafeArea(.all)
 
@@ -30,11 +38,10 @@ struct SurfMapView: View {
         // Chargement initial
         .onAppear {
             vm.loadSpots()
-            vm.startSessionListener()
+            vm.startSessionListener(for: mapRegion)
         }
     }
 }
-
 
 extension SurfMapView {
 
@@ -118,7 +125,6 @@ extension SurfMapView {
         }
     }
 }
-
 
 struct SessionRow: View {
     let session: SurfSession

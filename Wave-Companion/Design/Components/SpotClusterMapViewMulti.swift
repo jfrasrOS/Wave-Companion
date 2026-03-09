@@ -35,8 +35,8 @@ struct SpotClusterMapViewMulti: UIViewRepresentable {
                      forAnnotationViewWithReuseIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier)
         
         // Région initiale (centrée sur la France)
-        map.setRegion(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 46.6, longitude: 2.4),
-                                         span: MKCoordinateSpan(latitudeDelta: 7, longitudeDelta: 7)),
+        map.setRegion(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 46.6, longitude: -1.0),
+                                         span: MKCoordinateSpan(latitudeDelta: 8, longitudeDelta: 8)),
                       animated: false)
         return map
     }
