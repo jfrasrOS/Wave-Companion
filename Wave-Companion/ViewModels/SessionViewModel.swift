@@ -34,7 +34,8 @@ final class SessionViewModel: ObservableObject {
         sessions.contains {
             $0.latitude == spot.latitude &&
             $0.longitude == spot.longitude &&
-            $0.status == .open
+            $0.status == .open &&
+            $0.date > Date()
         }
     }
 
@@ -66,7 +67,8 @@ final class SessionViewModel: ObservableObject {
         sessions.filter {
             $0.latitude == spot.latitude &&
             $0.longitude == spot.longitude &&
-            $0.status == .open
+            $0.status == .open &&
+            $0.date > Date()
         }
     }
 
@@ -91,6 +93,11 @@ final class SessionViewModel: ObservableObject {
         maxPeople: Int
     ) async {
 
+        guard date > Date() else {
+            errorMessage = "Impossible de créer une session dans le passé"
+            return
+        }
+        
         guard let userId = Auth.auth().currentUser?.uid else {
             errorMessage = "Utilisateur non connecté"
             return
