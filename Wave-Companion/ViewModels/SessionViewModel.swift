@@ -24,6 +24,8 @@ final class SessionViewModel: ObservableObject {
 
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
+    
+    private var regionDebounceTask: Task<Void, Never>?
 
     func loadSpots() {
         spots = SpotService.loadAllSpots()
@@ -41,6 +43,17 @@ final class SessionViewModel: ObservableObject {
 
     // Listener dynamique selon zone visible
     func startSessionListener(for region: MKCoordinateRegion) {
+
+        regionDebounceTask?.cancel()
+
+        regionDebounceTask = Task {
+
+         loadSessions(for: region)
+        }
+    }
+    
+    func loadSessions(for region: MKCoordinateRegion) {
+
         listener?.remove()
 
         let minLat = region.center.latitude - region.span.latitudeDelta / 2
@@ -48,35 +61,37 @@ final class SessionViewModel: ObservableObject {
         let minLng = region.center.longitude - region.span.longitudeDelta / 2
         let maxLng = region.center.longitude + region.span.longitudeDelta / 2
 
-        print("Nouvelle zone carte")
-        
+        print("📍 Nouvelle zone carte")
+
         listener = db.collection("sessions")
             .whereField("status", isEqualTo: "open")
             .whereField("date", isGreaterThan: Timestamp(date: Date()))
             .addSnapshotListener { [weak self] snapshot, error in
+
                 guard let self else { return }
 
                 if let error {
-                    self.errorMessage = error.localizedDescription
+                    print("❌ Firestore error:", error)
                     return
                 }
 
                 guard let docs = snapshot?.documents else { return }
-                
-                print("Sessions Firestore:", docs.count)
+
+                print("🔥 Sessions Firestore:", docs.count)
 
                 let allSessions = docs.compactMap { doc -> SurfSession? in
                     try? doc.data(as: SurfSession.self)
                 }
 
-                // Filtre selon bounding box de la carte
                 self.sessions = allSessions.filter { s in
                     s.latitude >= minLat &&
                     s.latitude <= maxLat &&
                     s.longitude >= minLng &&
                     s.longitude <= maxLng
                 }
+
                 print("🗺 Sessions dans zone:", self.sessions.count)
+
                 self.updateSelectedSpotSessions()
             }
     }
@@ -84,8 +99,7 @@ final class SessionViewModel: ObservableObject {
     // Récupère les sessions pour un spot donné
     func sessions(for spot: Spot) -> [SurfSession] {
         sessions.filter {
-            $0.latitude == spot.latitude &&
-            $0.longitude == spot.longitude
+            $0.spotId == spot.id
         }
     }
 
@@ -128,11 +142,18 @@ final class SessionViewModel: ObservableObject {
         defer { isLoading = false }
 
         let sessionId = UUID().uuidString
+        let geohash = GeoHash.encode(
+            latitude: spot.latitude,
+            longitude: spot.longitude
+        )
+
         let newSession = SurfSession(
             id: sessionId,
             spotName: spot.name,
+            spotId: spot.id,
             latitude: spot.latitude,
             longitude: spot.longitude,
+            geohash: geohash,
             date: date,
             createdAt: Date(),
             creatorId: userId,
@@ -148,21 +169,23 @@ final class SessionViewModel: ObservableObject {
 
         do {
             try await db.collection("sessions")
-                .document(sessionId)
-                .setData([
-                    "id": newSession.id,
-                    "spotName": newSession.spotName,
-                    "latitude": newSession.latitude,
-                    "longitude": newSession.longitude,
-                    "date": Timestamp(date: newSession.date),
-                    "createdAt": Timestamp(date: newSession.createdAt),
-                    "creatorId": newSession.creatorId,
-                    "minimumLevel": newSession.minimumLevel,
-                    "maxPeople": newSession.maxPeople,
-                    "participantIDs": newSession.participantIDs,
-                    "chatId": newSession.chatId,
-                    "status": newSession.status.rawValue
-                ])
+            .document(sessionId)
+            .setData([
+                "id": newSession.id,
+                "spotId": newSession.spotId,
+                "spotName": newSession.spotName,
+                "latitude": newSession.latitude,
+                "longitude": newSession.longitude,
+                "geohash": newSession.geohash,
+                "date": Timestamp(date: newSession.date),
+                "createdAt": Timestamp(date: newSession.createdAt),
+                "creatorId": newSession.creatorId,
+                "minimumLevel": newSession.minimumLevel,
+                "maxPeople": newSession.maxPeople,
+                "participantIDs": newSession.participantIDs,
+                "chatId": newSession.chatId,
+                "status": newSession.status.rawValue
+            ])
         } catch {
             errorMessage = error.localizedDescription
         }
