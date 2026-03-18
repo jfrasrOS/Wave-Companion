@@ -13,7 +13,6 @@ struct SurfMapView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
 
-            // Carte avec clusters et sélection
             SpotClusterMapViewSingle(
                 spots: vm.spots,
                 hasSession: { vm.hasSession(for: $0) },
@@ -26,19 +25,16 @@ struct SurfMapView: View {
             )
             .edgesIgnoringSafeArea(.all)
 
-            // Bottom sheet si un spot est sélectionné
             if vm.selectedSpotID != nil {
                 bottomSheet
             }
         }
-        // Sheet pour créer session
         .sheet(isPresented: $showingCreate) {
             CreateSessionView(vm: vm)
         }
-        // Chargement initial
         .onAppear {
             vm.loadSpots()
-            vm.startSessionListener(for: mapRegion)
+            vm.loadCurrentUserLevel()
         }
     }
 }
@@ -58,11 +54,22 @@ extension SurfMapView {
             if vm.sessionsForSelectedSpot.isEmpty {
                 emptyState
             } else {
-                sessionList
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 12) {
+                        ForEach(vm.sessionsForSelectedSpot) { session in
+                            JoinSessionCardView(
+                                session: session,
+                                onJoin: {
+                                    Task { await vm.joinSession(session) }
+                                },
+                                levelCategory: vm.category(for: session.minimumLevel)
+                            )
+                        }
+                    }
+                }
             }
 
             createButton
-
         }
         .padding()
         .background(
@@ -84,20 +91,10 @@ extension SurfMapView {
                 }
             }
             Spacer()
-            Button {
-                vm.selectSpot(id: nil)
-            } label: {
+            Button { vm.selectSpot(id: nil) } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title3)
                     .foregroundColor(.secondary)
-            }
-        }
-    }
-
-    var sessionList: some View {
-        VStack(spacing: 10) {
-            ForEach(vm.sessionsForSelectedSpot) { session in
-                SessionRow(session: session)
             }
         }
     }
@@ -123,26 +120,5 @@ extension SurfMapView {
                 .foregroundColor(.white)
                 .cornerRadius(14)
         }
-    }
-}
-
-struct SessionRow: View {
-    let session: SurfSession
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text(session.spotName)
-                    .font(.subheadline.weight(.semibold))
-                Text(session.date.sessionFormatted)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
-            Image(systemName: "chevron.right").foregroundColor(.secondary)
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
     }
 }

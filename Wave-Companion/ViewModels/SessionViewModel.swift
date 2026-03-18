@@ -24,8 +24,67 @@ final class SessionViewModel: ObservableObject {
 
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
-    
     private var regionDebounceTask: Task<Void, Never>?
+    
+    private let surfLevels = SurfLevelService.loadLevels()
+    @Published var currentUserLevelId: String?
+    
+    private var currentRegion: MKCoordinateRegion?
+    
+    func levelOrder(for id: String) -> Int? {
+        surfLevels.first { $0.id == id }?.order
+    }
+    
+    func category(for levelId: String) -> String {
+        surfLevels.first { $0.id == levelId }?.category ?? levelId
+    }
+    
+    func userCanSee(session: SurfSession) -> Bool {
+
+        print("USER LEVEL:", currentUserLevelId ?? "nil")
+        print("SESSION MIN LEVEL RAW:", session.minimumLevel)
+
+        guard let userLevelId = currentUserLevelId else { return false }
+
+        guard
+            let userOrder = levelOrder(for: userLevelId),
+            let sessionOrder = levelOrder(for: session.minimumLevel)
+        else {
+            print("ORDER NOT FOUND")
+            return false
+        }
+
+        print("USER ORDER:", userOrder)
+        print("SESSION ORDER:", sessionOrder)
+
+        return userOrder >= sessionOrder
+    }
+    
+    func loadCurrentUserLevel() {
+
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+
+        db.collection("users")
+            .document(uid)
+            .getDocument { [weak self] snapshot, error in
+
+                guard let self else { return }
+                guard let data = snapshot?.data() else { return }
+
+                let levelId = data["surfLevelId"] as? String
+
+                Task { @MainActor in
+                    self.currentUserLevelId = levelId
+
+                    print("USER LEVEL LOADED:", self.currentUserLevelId ?? "nil")
+
+                    if let region = self.currentRegion {
+                        self.loadSessions(for: region)
+                    }
+                }
+            }
+    }
+    
 
     func loadSpots() {
         spots = SpotService.loadAllSpots()
@@ -43,17 +102,12 @@ final class SessionViewModel: ObservableObject {
 
     // Listener dynamique selon zone visible
     func startSessionListener(for region: MKCoordinateRegion) {
-
+        currentRegion = region
         regionDebounceTask?.cancel()
-
-        regionDebounceTask = Task {
-
-         loadSessions(for: region)
-        }
+        regionDebounceTask = Task { loadSessions(for: region) }
     }
-    
-    func loadSessions(for region: MKCoordinateRegion) {
 
+    func loadSessions(for region: MKCoordinateRegion) {
         listener?.remove()
 
         let minLat = region.center.latitude - region.span.latitudeDelta / 2
@@ -67,7 +121,6 @@ final class SessionViewModel: ObservableObject {
             .whereField("status", isEqualTo: "open")
             .whereField("date", isGreaterThan: Timestamp(date: Date()))
             .addSnapshotListener { [weak self] snapshot, error in
-
                 guard let self else { return }
 
                 if let error {
@@ -82,25 +135,30 @@ final class SessionViewModel: ObservableObject {
                 let allSessions = docs.compactMap { doc -> SurfSession? in
                     try? doc.data(as: SurfSession.self)
                 }
+                
+                print("ALL SESSIONS:", allSessions.count)
 
                 self.sessions = allSessions.filter { s in
-                    s.latitude >= minLat &&
-                    s.latitude <= maxLat &&
-                    s.longitude >= minLng &&
-                    s.longitude <= maxLng
+
+                    let inRegion =
+                        s.latitude >= minLat &&
+                        s.latitude <= maxLat &&
+                        s.longitude >= minLng &&
+                        s.longitude <= maxLng
+
+                    let levelAllowed = self.userCanSee(session: s)
+
+                    return inRegion && levelAllowed
                 }
 
                 print("🗺 Sessions dans zone:", self.sessions.count)
-
                 self.updateSelectedSpotSessions()
             }
     }
 
     // Récupère les sessions pour un spot donné
     func sessions(for spot: Spot) -> [SurfSession] {
-        sessions.filter {
-            $0.spotId == spot.id
-        }
+        sessions.filter { $0.spotId == spot.id }
     }
 
     func updateSelectedSpotSessions() {
@@ -137,15 +195,21 @@ final class SessionViewModel: ObservableObject {
             errorMessage = "Veuillez sélectionner un spot"
             return
         }
+        
+        guard let userLevelId = currentUserLevelId,
+              let userOrder = levelOrder(for: userLevelId),
+              let sessionOrder = levelOrder(for: minLevel),
+              sessionOrder <= userOrder
+        else {
+            errorMessage = "Tu ne peux pas créer une session avec un niveau supérieur au tien"
+            return
+        }
 
         isLoading = true
         defer { isLoading = false }
 
         let sessionId = UUID().uuidString
-        let geohash = GeoHash.encode(
-            latitude: spot.latitude,
-            longitude: spot.longitude
-        )
+        let geohash = GeoHash.encode(latitude: spot.latitude, longitude: spot.longitude)
 
         let newSession = SurfSession(
             id: sessionId,
@@ -163,33 +227,67 @@ final class SessionViewModel: ObservableObject {
             chatId: sessionId,
             status: .open
         )
-        // Ajout immédiat pour que l'UI réagisse
+
         sessions.append(newSession)
         updateSelectedSpotSessions()
 
         do {
             try await db.collection("sessions")
-            .document(sessionId)
-            .setData([
-                "id": newSession.id,
-                "spotId": newSession.spotId,
-                "spotName": newSession.spotName,
-                "latitude": newSession.latitude,
-                "longitude": newSession.longitude,
-                "geohash": newSession.geohash,
-                "date": Timestamp(date: newSession.date),
-                "createdAt": Timestamp(date: newSession.createdAt),
-                "creatorId": newSession.creatorId,
-                "minimumLevel": newSession.minimumLevel,
-                "maxPeople": newSession.maxPeople,
-                "participantIDs": newSession.participantIDs,
-                "chatId": newSession.chatId,
-                "status": newSession.status.rawValue
-            ])
+                .document(sessionId)
+                .setData([
+                    "id": newSession.id,
+                    "spotId": newSession.spotId,
+                    "spotName": newSession.spotName,
+                    "latitude": newSession.latitude,
+                    "longitude": newSession.longitude,
+                    "geohash": newSession.geohash,
+                    "date": Timestamp(date: newSession.date),
+                    "createdAt": Timestamp(date: newSession.createdAt),
+                    "creatorId": newSession.creatorId,
+                    "minimumLevel": newSession.minimumLevel,
+                    "maxPeople": newSession.maxPeople,
+                    "participantIDs": newSession.participantIDs,
+                    "chatId": newSession.chatId,
+                    "status": newSession.status.rawValue
+                ])
         } catch {
             errorMessage = error.localizedDescription
         }
 
         updateSelectedSpotSessions()
+    }
+
+    @MainActor
+    func joinSession(_ session: SurfSession) async {
+
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        guard userCanSee(session: session) else {
+            errorMessage = "Niveau insuffisant pour cette session"
+            return
+        }
+        guard let index = sessions.firstIndex(where: { $0.id == session.id }) else { return }
+
+        if sessions[index].participantIDs.contains(userId) { return }
+        if sessions[index].participantIDs.count >= sessions[index].maxPeople {
+            errorMessage = "Session complète"
+            return
+        }
+
+        do {
+            try await db.collection("sessions")
+                .document(session.id)
+                .updateData([
+                    "participantIDs": FieldValue.arrayUnion([userId])
+                ])
+
+            if !sessions[index].participantIDs.contains(userId) {
+                sessions[index].participantIDs.append(userId)
+            }
+
+            updateSelectedSpotSessions()
+
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }

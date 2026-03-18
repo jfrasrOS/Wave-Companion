@@ -8,10 +8,30 @@ struct CreateSessionView: View {
     @State private var sessionDate = Date().minimumSessionDate()
     @State private var pickerDate = Date().minimumSessionDate()
 
-    @State private var minLevel = "Débutant"
+   
     @State private var maxPeople = 4
 
-    let levels = ["Débutant","Intermédiaire","Confirmé","Expert"]
+    let levelCategories: [(label: String, id: String)] = [
+        ("Débutant", "mousse_1"),
+        ("Intermédiaire", "bronze_1"),
+        ("Confirmé", "argent_2"),
+        ("Expert", "or_2")
+    ]
+
+    @State private var minLevelId = "mousse_1"
+    
+    var allowedLevels: [(label: String, id: String)] {
+        guard let userLevelId = vm.currentUserLevelId,
+              let userOrder = vm.levelOrder(for: userLevelId)
+        else {
+            return []
+        }
+
+        return levelCategories.filter { level in
+            guard let levelOrder = vm.levelOrder(for: level.id) else { return false }
+            return levelOrder <= userOrder
+        }
+    }
 
     var body: some View {
 
@@ -28,9 +48,10 @@ struct CreateSessionView: View {
                 )
 
                 // Niveau minimum
-                Picker("Niveau minimum", selection: $minLevel) {
-                    ForEach(levels, id: \.self) {
-                        Text($0)
+                Picker("Niveau minimum", selection: $minLevelId) {
+                    ForEach(allowedLevels, id: \.id) { level in
+                        Text(level.label)
+                            .tag(level.id)
                     }
                 }
 
@@ -50,7 +71,7 @@ struct CreateSessionView: View {
                     Task {
                         await vm.createSession(
                             date: sessionDate,
-                            minLevel: minLevel,
+                            minLevel: minLevelId,
                             maxPeople: maxPeople
                         )
                         dismiss()
