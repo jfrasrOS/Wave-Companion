@@ -1,13 +1,11 @@
-//
-//  SessionCard.swift
-//  Wave-Companion
-//
-
 import SwiftUI
 
 struct SessionCard: View {
     
     @ObservedObject var vm: SessionDashboardViewModel
+    var onOpenMap: () -> Void
+    var onJoin: (SurfSession) -> Void
+
     
     var body: some View {
         
@@ -29,22 +27,46 @@ struct SessionCard: View {
             }
         }
         .padding(16)
-        .cornerRadius(18)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .stroke(AppColors.primary, lineWidth: 1)
         )
         .padding(.horizontal, 16)
-        
     }
 }
 
-// Rejoindre une session
+func openAppSettings() {
+    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+    UIApplication.shared.open(url)
+}
+
+// MARK: - LOGIC HELPERS
+private extension SessionCard {
+    
+    func uniqueParticipants(_ session: SurfSession) -> [String] {
+        Array(Set(session.participantIDs))
+    }
+
+    func remainingSpots(_ session: SurfSession) -> Int {
+        max(0, session.maxPeople - uniqueParticipants(session).count)
+    }
+
+    func badgeColor(_ remaining: Int) -> Color {
+        if remaining == 0 { return Color.red.opacity(0.2) }
+        if remaining <= 2 { return Color.orange.opacity(0.2) }
+        return Color.green.opacity(0.2)
+    }
+}
+
+// MARK: - JOINED
 private extension SessionCard {
     
     func joinedView(_ session: SurfSession) -> some View {
         
-        VStack(alignment: .leading, spacing: 16) {
+        let participants = uniqueParticipants(session)
+        let remaining = remainingSpots(session)
+        
+        return VStack(alignment: .leading, spacing: 16) {
             
             header(
                 title: "Ta prochaine session",
@@ -63,10 +85,10 @@ private extension SessionCard {
                 
                 HStack(spacing: 10) {
                     
-                    
+                    // Niveau
                     HStack(spacing: 6) {
                         Image(systemName: "figure.surfing")
-                        Text("Min. \(session.minimumLevel)")
+                        Text("Min. \(vm.category(for: session.minimumLevel))")
                     }
                     .font(.caption.weight(.medium))
                     .padding(.horizontal, 10)
@@ -74,23 +96,36 @@ private extension SessionCard {
                     .background(AppColors.primary.opacity(0.15))
                     .clipShape(Capsule())
                     
+                    // Places restantes
                     HStack(spacing: 6) {
                         Image(systemName: "person.2.fill")
-                        Text("\(session.participantIDs.count) participant\(session.participantIDs.count > 1 ? "s" : "")")
+                        Text(
+                            remaining == 0
+                            ? "Session pleine"
+                            : "\(remaining) place\(remaining > 1 ? "s" : "") restante\(remaining > 1 ? "s" : "")"
+                        )
                     }
                     .font(.caption.weight(.medium))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.green.opacity(0.15))
+                    .background(badgeColor(remaining))
                     .clipShape(Capsule())
-                    
-                    
                 }
             }
             
             HStack {
                 
-                AvatarStackView(imageURLs: session.participantIDs)
+                VStack(alignment: .leading, spacing: 6) {
+                    AvatarStackView(imageURLs: participants)
+                    
+                    Text(
+                        participants.count == 1
+                        ? "1 surfeur participe"
+                        : "\(participants.count) surfeurs participent"
+                    )
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                }
                 
                 Spacer()
                 
@@ -102,22 +137,21 @@ private extension SessionCard {
                         .padding(.vertical, 8)
                 }
                 .foregroundColor(AppColors.action)
-                .clipShape(Capsule())
                 .overlay(
-                    Capsule()
-                        .stroke(AppColors.action, lineWidth: 1)
+                    Capsule().stroke(AppColors.action, lineWidth: 1)
                 )
             }
         }
     }
 }
 
-// Suggestion
+// MARK: - SUGGESTION
 private extension SessionCard {
     
     func suggestionView(_ main: SurfSession, _ others: [SurfSession]) -> some View {
         
-        let remainingSpots = max(0, main.maxPeople - main.participantIDs.count)
+        let participants = uniqueParticipants(main)
+        let remaining = remainingSpots(main)
         
         return VStack(alignment: .leading, spacing: 18) {
             
@@ -127,7 +161,6 @@ private extension SessionCard {
                 color: AppColors.primary
             )
             
-            // HERO BLOCK
             VStack(alignment: .leading, spacing: 12) {
                 
                 Text(main.spotName)
@@ -137,13 +170,12 @@ private extension SessionCard {
                     .font(.subheadline.bold())
                     .foregroundColor(.secondary)
                 
-                // BADGES ROW
                 HStack(spacing: 10) {
                     
-                    // Niveau minimum
+                    // Niveau
                     HStack(spacing: 6) {
                         Image(systemName: "figure.surfing")
-                        Text("Min. \(main.minimumLevel)")
+                        Text("Min. \(vm.category(for: main.minimumLevel))")
                     }
                     .font(.caption.weight(.medium))
                     .padding(.horizontal, 10)
@@ -154,53 +186,51 @@ private extension SessionCard {
                     // Places restantes
                     HStack(spacing: 6) {
                         Image(systemName: "person.2.fill")
-                        Text("\(remainingSpots) place\(remainingSpots > 1 ? "s" : "") restante\(remainingSpots > 1 ? "s" : "")")
+                        Text(
+                            remaining == 0
+                            ? "Session pleine"
+                            : "\(remaining) place\(remaining > 1 ? "s" : "") restante\(remaining > 1 ? "s" : "")"
+                        )
                     }
                     .font(.caption.weight(.medium))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(
-                        remainingSpots <= 2 ?
-                        Color.orange.opacity(0.2) :
-                        Color.green.opacity(0.2)
-                    )
+                    .background(badgeColor(remaining))
                     .clipShape(Capsule())
                 }
             }
             
-            // SOCIAL + CTA
-            HStack(alignment: .center) {
+            HStack {
                 
                 VStack(alignment: .leading, spacing: 6) {
-                    AvatarStackView(imageURLs: main.participantIDs)
+                    AvatarStackView(imageURLs: participants)
                     
-                    Text("\(main.participantIDs.count) surfeur\(main.participantIDs.count > 1 ? "s" : "") déjà inscrit\(main.participantIDs.count > 1 ? "s" : "")")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                    Text(
+                        participants.count == 1
+                        ? "1 surfeur participe"
+                        : "\(participants.count) surfeurs participent"
+                    )
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
                 }
                 
                 Spacer()
                 
                 Button {
+                    onJoin(main)
                 } label: {
                     Text("Rejoindre")
                         .font(.caption.weight(.semibold))
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                 }
-              
                 .foregroundColor(AppColors.action)
-                .clipShape(Capsule())
                 .overlay(
-                    Capsule()
-                        .stroke(AppColors.action, lineWidth: 1)
+                    Capsule().stroke(AppColors.action, lineWidth: 1)
                 )
-               
-                
             }
             
             if !others.isEmpty {
-                
                 Divider()
                 
                 VStack(alignment: .leading, spacing: 6) {
@@ -212,28 +242,13 @@ private extension SessionCard {
                     ForEach(others.prefix(2)) { session in
                         
                         Button {
-                            // Navigation vers détail session
                         } label: {
-                            
-                            HStack(spacing: 6) {
-                                
+                            HStack {
                                 Text(session.spotName)
-                                    .font(.caption.weight(.medium))
-                                
-                                Text("•")
-                                    .foregroundColor(.secondary)
-                                
-                                Text(session.date.sessionFormatted)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                
                                 Spacer()
-                                
                                 Image(systemName: "chevron.right")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
                             }
-                            .padding(.vertical, 2)
+                            .font(.caption)
                         }
                         .buttonStyle(.plain)
                     }
@@ -242,7 +257,6 @@ private extension SessionCard {
         }
     }
 }
-
 //Aucune session
 private extension SessionCard {
     
@@ -263,6 +277,7 @@ private extension SessionCard {
             HStack {
                 
                 Button {
+                    onOpenMap()
                 } label: {
                     Text("Créer")
                         .font(.caption.weight(.semibold))
@@ -304,6 +319,7 @@ private extension SessionCard {
             HStack {
                 
                 Button {
+                    openAppSettings()
                 } label: {
                     Text("Activer")
                         .font(.caption.weight(.semibold))
@@ -320,6 +336,7 @@ private extension SessionCard {
                 Spacer()
                 
                 Button {
+                    onOpenMap()
                 } label: {
                     HStack(spacing: 4) {
                         Text("Voir la carte")
@@ -385,33 +402,5 @@ struct AvatarStackView: View {
     }
 }
 
-#Preview("Suggestion") {
-    let vm = SessionDashboardViewModel()
-    vm.state = .suggestion(
-        main: MockData.nearbySessions[0],
-        others: Array(MockData.nearbySessions.dropFirst())
-    )
-    return SessionCard(vm: vm)
-        .background(Color(.systemBackground))
-}
 
-#Preview("Session rejointe") {
-    let vm = SessionDashboardViewModel()
-    vm.state = .joined(session: MockData.nearbySessions[0])
-    return SessionCard(vm: vm)
-        .background(Color(.systemBackground))
-}
 
-#Preview("Aucune session") {
-    let vm = SessionDashboardViewModel()
-    vm.state = .noNearbySessions
-    return SessionCard(vm: vm)
-        .background(Color(.systemBackground))
-}
-
-#Preview("Localisation désactivée") {
-    let vm = SessionDashboardViewModel()
-    vm.state = .locationDisabled
-    return SessionCard(vm: vm)
-        .background(Color(.systemBackground))
-}
