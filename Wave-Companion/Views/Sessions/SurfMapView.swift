@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import FirebaseAuth
 
 struct SurfMapView: View {
 
@@ -13,6 +14,7 @@ struct SurfMapView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
 
+            // Carte avec clusters
             SpotClusterMapViewSingle(
                 spots: vm.spots,
                 hasSession: { vm.hasSession(for: $0) },
@@ -25,6 +27,7 @@ struct SurfMapView: View {
             )
             .edgesIgnoringSafeArea(.all)
 
+            // Bottom sheet affichée si un spot est sélectionné
             if vm.selectedSpotID != nil {
                 bottomSheet
             }
@@ -41,9 +44,11 @@ struct SurfMapView: View {
 
 extension SurfMapView {
 
+    // MARK: - Bottom Sheet
     var bottomSheet: some View {
         VStack(spacing: 16) {
 
+            // Drag indicator
             Capsule()
                 .frame(width: 40, height: 5)
                 .foregroundColor(.gray.opacity(0.4))
@@ -57,12 +62,28 @@ extension SurfMapView {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 12) {
                         ForEach(vm.sessionsForSelectedSpot) { session in
-                            JoinSessionCardView(
+
+                            // Participants uniques
+                            let participants = Array(Set(session.participantIDs))
+                            let remaining = max(0, session.maxPeople - participants.count)
+                            let isJoined = Auth.auth().currentUser.map { participants.contains($0.uid) } ?? false
+                            let canJoin = !isJoined && remaining > 0
+
+                            // Utilisation de SessionCardView
+                            SessionCardView(
                                 session: session,
-                                onJoin: {
-                                    Task { await vm.joinSession(session) }
-                                },
-                                levelCategory: vm.category(for: session.minimumLevel)
+                                levelText: "Min. \(vm.category(for: session.minimumLevel))",
+                                sessionTitle: isJoined ? "Ta prochaine session" : (remaining == 0 ? "Session complète" : "Session ouverte"),
+                                titleColor: isJoined ? .green : (remaining == 0 ? .red : .green),
+                                buttonTitle: isJoined ? "Détails" : (remaining == 0 ? "Complet" : "Rejoindre"),
+                                buttonEnabled: canJoin || isJoined,
+                                onButtonTap: {
+                                    if isJoined {
+                                        // TODO: navigation vers les détails de la session
+                                    } else {
+                                        Task { await vm.joinSession(session) }
+                                    }
+                                }
                             )
                         }
                     }
@@ -77,11 +98,11 @@ extension SurfMapView {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.08), radius: 20)
         )
-        .padding()
         .transition(.move(edge: .bottom))
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.selectedSpotID)
     }
 
+    // MARK: - Header
     var header: some View {
         HStack {
             if let spot = vm.spots.first(where: { $0.id == vm.selectedSpotID }) {
@@ -99,15 +120,19 @@ extension SurfMapView {
         }
     }
 
+    // MARK: - Empty State
     var emptyState: some View {
         VStack(spacing: 6) {
-            Image(systemName: "water.waves").font(.title2).foregroundColor(.secondary)
+            Image(systemName: "water.waves")
+                .font(.title2)
+                .foregroundColor(.secondary)
             Text("Aucune session pour ce spot").font(.subheadline)
             Text("Soyez le premier à en créer une").font(.caption).foregroundColor(.secondary)
         }
         .padding(.vertical, 8)
     }
 
+    // MARK: - Create Button
     var createButton: some View {
         Button {
             showingCreate = true

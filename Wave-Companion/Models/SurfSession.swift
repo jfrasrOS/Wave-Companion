@@ -1,6 +1,6 @@
 import Foundation
 
-struct SurfSession: Identifiable, Codable {
+struct SurfSession: Identifiable, Codable, Hashable{
     
     var id: String
     
@@ -24,9 +24,13 @@ struct SurfSession: Identifiable, Codable {
     var chatId: String
     
     var status: SessionStatus
+    
+    var wavesCount: Int?
+    var skills: [String]?
+    var afterSessionCompleted: Bool?
 }
 
-enum SessionStatus: String, Codable {
+enum SessionStatus: String, Codable, Hashable {
     case open
     case full
     case cancelled

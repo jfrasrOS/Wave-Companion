@@ -20,8 +20,7 @@ struct MainTabContainer: View {
                 case .discover:
                     SurfMapView()
                 case .sessions:
-                    Text("Sessions")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    MySessionsView()
                 case .friends:
                     Text("Amis")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
