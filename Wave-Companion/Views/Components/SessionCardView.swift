@@ -83,21 +83,34 @@ struct SessionCardView: View {
                 
                 Spacer()
                 
-                Button(action: onButtonTap) {
-                    Text(buttonTitle)
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .frame(minWidth: 80)
-                        .background(buttonEnabled ? Color.clear : AppColors.action)
-                        .foregroundColor(buttonEnabled ? AppColors.action : .white)
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(buttonEnabled ? AppColors.action : Color.clear, lineWidth: 1)
-                        )
+                if buttonTitle == "Voir" {
+                    NavigationLink(value: session) {
+                        Text(buttonTitle)
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .frame(minWidth: 80)
+                            .background(Color.clear)
+                            .foregroundColor(AppColors.action)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(AppColors.action, lineWidth: 1)
+                            )
+                    }
+                } else {
+                    Button(action: onButtonTap) {
+                        Text(buttonTitle)
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .frame(minWidth: 80)
+                            .background(AppColors.action)
+                            .foregroundColor(.white)
+                            .clipShape(Capsule())
+                    }
+                    .disabled(!buttonEnabled)
                 }
-                .disabled(!buttonEnabled)
             }
         }
         .padding(16)

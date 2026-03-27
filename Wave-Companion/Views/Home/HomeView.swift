@@ -49,6 +49,11 @@ struct HomeView: View {
             .navigationDestination(isPresented: $showMap) {
                 SurfMapView()
             }
+            .navigationDestination(for: SurfSession.self) { session in
+                SessionDetailView(
+                    vm: SessionDetailViewModel(session: session)
+                )
+            }
         }
         .task {
             if homeVM.user == nil {

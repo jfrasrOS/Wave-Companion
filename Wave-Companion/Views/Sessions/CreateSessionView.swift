@@ -59,7 +59,7 @@ struct CreateSessionView: View {
                 HStack {
                     Text("Participants max")
                     Spacer()
-                    Stepper(value: $maxPeople, in: 2...12) {
+                    Stepper(value: $maxPeople, in: 2...10) {
                         Text("\(maxPeople)")
                     }
                 }

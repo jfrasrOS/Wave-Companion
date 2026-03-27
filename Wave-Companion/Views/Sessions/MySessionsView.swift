@@ -29,6 +29,11 @@ struct MySessionsView: View {
                 .padding(.vertical, 20)
                 .padding(.horizontal, 16)
             }
+            .navigationDestination(for: SurfSession.self) { session in
+                SessionDetailView(
+                    vm: SessionDetailViewModel(session: session)
+                )
+            }
         }
         // PopUp
         .overlay {

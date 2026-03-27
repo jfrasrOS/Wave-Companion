@@ -3,6 +3,9 @@ import MapKit
 import FirebaseAuth
 
 struct SurfMapView: View {
+    
+    @State private var selectedSession: SurfSession?
+    @State private var showSessionDetail = false
 
     @StateObject private var vm = SessionViewModel()
     @State private var showingCreate = false
@@ -12,43 +15,47 @@ struct SurfMapView: View {
     )
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-
-            // Carte avec clusters
-            SpotClusterMapViewSingle(
-                spots: vm.spots,
-                hasSession: { vm.hasSession(for: $0) },
-                selectedSpotID: $vm.selectedSpotID,
-                focusedSpotID: $vm.selectedSpotID,
-                region: $mapRegion,
-                onRegionChanged: { region in
-                    vm.startSessionListener(for: region)
+        NavigationStack {
+            ZStack(alignment: .bottom) {
+                
+                // Carte avec clusters
+                SpotClusterMapViewSingle(
+                    spots: vm.spots,
+                    hasSession: { vm.hasSession(for: $0) },
+                    selectedSpotID: $vm.selectedSpotID,
+                    focusedSpotID: $vm.selectedSpotID,
+                    region: $mapRegion,
+                    onRegionChanged: { region in
+                        vm.startSessionListener(for: region)
+                    }
+                )
+                .edgesIgnoringSafeArea(.all)
+                
+                // Bottom sheet affichée si un spot est sélectionné
+                if vm.selectedSpotID != nil {
+                    bottomSheet
                 }
-            )
-            .edgesIgnoringSafeArea(.all)
-
-            // Bottom sheet affichée si un spot est sélectionné
-            if vm.selectedSpotID != nil {
-                bottomSheet
             }
-        }
-        .sheet(isPresented: $showingCreate) {
-            CreateSessionView(vm: vm)
-        }
-        .onAppear {
-            vm.loadSpots()
-            vm.loadCurrentUserLevel()
+            .navigationDestination(for: SurfSession.self) { session in
+                SessionDetailView(
+                    vm: SessionDetailViewModel(session: session)
+                )
+            }
+            .sheet(isPresented: $showingCreate) {
+                CreateSessionView(vm: vm)
+            }
+            .onAppear {
+                vm.loadSpots()
+                vm.loadCurrentUserLevel()
+            }
         }
     }
 }
 
 extension SurfMapView {
-
-    // MARK: - Bottom Sheet
-    var bottomSheet: some View {
+    
+       var bottomSheet: some View {
         VStack(spacing: 16) {
-
-            // Drag indicator
             Capsule()
                 .frame(width: 40, height: 5)
                 .foregroundColor(.gray.opacity(0.4))
@@ -62,25 +69,23 @@ extension SurfMapView {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 12) {
                         ForEach(vm.sessionsForSelectedSpot) { session in
-
-                            // Participants uniques
                             let participants = Array(Set(session.participantIDs))
                             let remaining = max(0, session.maxPeople - participants.count)
                             let isJoined = Auth.auth().currentUser.map { participants.contains($0.uid) } ?? false
                             let canJoin = !isJoined && remaining > 0
 
-                            // Utilisation de SessionCardView
                             SessionCardView(
                                 session: session,
                                 levelText: "Min. \(vm.category(for: session.minimumLevel))",
                                 sessionTitle: isJoined ? "Ta prochaine session" : (remaining == 0 ? "Session complète" : "Session ouverte"),
                                 titleColor: isJoined ? .green : (remaining == 0 ? .red : .green),
-                                buttonTitle: isJoined ? "Détails" : (remaining == 0 ? "Complet" : "Rejoindre"),
+                                buttonTitle: isJoined ? "Voir" : (remaining == 0 ? "Complet" : "Rejoindre"),
                                 buttonEnabled: canJoin || isJoined,
                                 onButtonTap: {
                                     if isJoined {
-                                        // TODO: navigation vers les détails de la session
-                                    } else {
+                                        selectedSession = session
+                                        showSessionDetail = true
+                                    } else if canJoin {
                                         Task { await vm.joinSession(session) }
                                     }
                                 }
@@ -98,11 +103,9 @@ extension SurfMapView {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.08), radius: 20)
         )
-        .transition(.move(edge: .bottom))
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.selectedSpotID)
+        
     }
-
-    // MARK: - Header
+    // Header
     var header: some View {
         HStack {
             if let spot = vm.spots.first(where: { $0.id == vm.selectedSpotID }) {
@@ -120,7 +123,7 @@ extension SurfMapView {
         }
     }
 
-    // MARK: - Empty State
+    // Aucune session
     var emptyState: some View {
         VStack(spacing: 6) {
             Image(systemName: "water.waves")
@@ -132,7 +135,7 @@ extension SurfMapView {
         .padding(.vertical, 8)
     }
 
-    // MARK: - Create Button
+    // Create
     var createButton: some View {
         Button {
             showingCreate = true
