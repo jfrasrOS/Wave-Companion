@@ -5,12 +5,9 @@ struct HomeView: View {
     @StateObject private var sessionVM = SessionViewModel()
     @StateObject private var dashboardVM = SessionDashboardViewModel()
     
-    @State private var showMap = false
+    @Binding var selectedTab: TabItem
+    @Binding var selectedChatId: String?
     
-    // Preview
-    init(homeVM: HomeViewModel = HomeViewModel()) {
-        _homeVM = StateObject(wrappedValue: homeVM)
-    }
 
     var body: some View {
         NavigationStack {
@@ -28,7 +25,7 @@ struct HomeView: View {
                         SessionCard(
                             vm: dashboardVM,
                             onOpenMap: {
-                                showMap = true
+                                selectedTab = .discover
                             },
                             onJoin: { session in
                                 Task {
@@ -46,12 +43,11 @@ struct HomeView: View {
                 }
                 .padding(.top)
             }
-            .navigationDestination(isPresented: $showMap) {
-                SurfMapView()
-            }
             .navigationDestination(for: SurfSession.self) { session in
                 SessionDetailView(
-                    vm: SessionDetailViewModel(session: session)
+                    vm: SessionDetailViewModel(session: session),
+                    selectedTab: $selectedTab,
+                    selectedChatId: $selectedChatId
                 )
             }
         }
@@ -64,12 +60,4 @@ struct HomeView: View {
     }
 }
 
-#Preview("Home") {
-    MainActor.assumeIsolated {
-        let mockVM = HomeViewModel()
-        mockVM.user = UserMock.shared.user
-        mockVM.loadSurfLevelInfo(for: UserMock.shared.user)
 
-        return HomeView(homeVM: mockVM)
-    }
-}

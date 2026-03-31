@@ -10,6 +10,8 @@ import SwiftUI
 struct SessionDetailView: View {
     
     @StateObject var vm: SessionDetailViewModel
+    @Binding var selectedTab: TabItem
+    @Binding var selectedChatId: String?
     
     var body: some View {
         ScrollView {
@@ -22,6 +24,18 @@ struct SessionDetailView: View {
                 participantsSection
             }
             .padding()
+            Button {
+                selectedChatId = vm.session.chatId
+                selectedTab = .community
+            } label: {
+                Text("Ouvrir le chat")
+                    .bold()
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppColors.primary)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Session")

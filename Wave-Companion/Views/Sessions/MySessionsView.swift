@@ -8,6 +8,17 @@ struct MySessionsView: View {
     @State private var showPopup = false
     @State private var popupPosition: CGPoint = .zero
     
+    @Binding var selectedTab: TabItem
+    @Binding var selectedChatId: String?
+    
+    init(
+        selectedTab: Binding<TabItem>,
+        selectedChatId: Binding<String?>
+    ) {
+        _selectedTab = selectedTab
+        _selectedChatId = selectedChatId
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -31,7 +42,9 @@ struct MySessionsView: View {
             }
             .navigationDestination(for: SurfSession.self) { session in
                 SessionDetailView(
-                    vm: SessionDetailViewModel(session: session)
+                    vm: SessionDetailViewModel(session: session),
+                    selectedTab: $selectedTab,
+                    selectedChatId: $selectedChatId
                 )
             }
         }
@@ -72,15 +85,18 @@ struct NextSessionSection: View {
             Text("Prochaine session")
                 .font(.headline)
             
-            SessionCardView(
-                session: session,
-                levelText: "Min. \(vm.category(for: session.minimumLevel))",
-                sessionTitle: nil,
-                titleColor: nil,
-                buttonTitle: "Voir",
-                buttonEnabled: true,
-                onButtonTap: {}
-            )
+            NavigationLink(value: session) {
+                SessionCardView(
+                    session: session,
+                    levelText: "Min. \(vm.category(for: session.minimumLevel))",
+                    sessionTitle: nil,
+                    titleColor: nil,
+                    buttonTitle: "Voir",
+                    buttonEnabled: true,
+                    onButtonTap: {}
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 }

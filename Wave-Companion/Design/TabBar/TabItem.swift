@@ -11,7 +11,7 @@ enum TabItem: String, CaseIterable, Identifiable {
     case home
     case discover
     case sessions
-    case friends
+    case community
     case profile
 
     var id: String { rawValue }
@@ -23,7 +23,7 @@ enum TabItem: String, CaseIterable, Identifiable {
         case .home: return "house.fill"
         case .discover: return "safari.fill"
         case .sessions: return "wave.3.right"
-        case .friends: return "person.2.fill"
+        case .community: return "person.2.fill"
         case .profile: return "person.crop.circle"
         }
     }

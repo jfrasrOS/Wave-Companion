@@ -115,7 +115,7 @@ final class SessionViewModel: ObservableObject {
         let minLng = region.center.longitude - region.span.longitudeDelta / 2
         let maxLng = region.center.longitude + region.span.longitudeDelta / 2
 
-        print("📍 Nouvelle zone carte")
+        print("Nouvelle zone carte")
 
         listener = db.collection("sessions")
             .whereField("status", isEqualTo: "open")
@@ -124,13 +124,13 @@ final class SessionViewModel: ObservableObject {
                 guard let self else { return }
 
                 if let error {
-                    print("❌ Firestore error:", error)
+                    print("Firestore error:", error)
                     return
                 }
 
                 guard let docs = snapshot?.documents else { return }
 
-                print("🔥 Sessions Firestore:", docs.count)
+                print("Sessions Firestore:", docs.count)
 
                 let allSessions = docs.compactMap { doc -> SurfSession? in
                     try? doc.data(as: SurfSession.self)
@@ -151,7 +151,7 @@ final class SessionViewModel: ObservableObject {
                     return inRegion && levelAllowed
                 }
 
-                print("🗺 Sessions dans zone:", self.sessions.count)
+                print("Sessions dans zone:", self.sessions.count)
                 self.updateSelectedSpotSessions()
             }
     }
@@ -232,6 +232,7 @@ final class SessionViewModel: ObservableObject {
         updateSelectedSpotSessions()
 
         do {
+            // Créer session
             try await db.collection("sessions")
                 .document(sessionId)
                 .setData([
@@ -250,6 +251,21 @@ final class SessionViewModel: ObservableObject {
                     "chatId": newSession.chatId,
                     "status": newSession.status.rawValue
                 ])
+
+            // Créer le chat de session
+            try await db.collection("chats")
+                .document(sessionId)
+                .setData([
+                    "id": sessionId,
+                    "sessionId": sessionId,
+                    "creatorId": userId,
+                    "participantIDs": [userId],
+                    "type": "session",
+                    "createdAt": Timestamp(date: Date()),
+                    "lastMessage": "",
+                    "lastMessageDate": Timestamp(date: Date())
+                ])
+
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -261,29 +277,51 @@ final class SessionViewModel: ObservableObject {
     func joinSession(_ session: SurfSession) async {
 
         guard let userId = Auth.auth().currentUser?.uid else { return }
+        
         guard userCanSee(session: session) else {
             errorMessage = "Niveau insuffisant pour cette session"
             return
         }
+        
         guard let index = sessions.firstIndex(where: { $0.id == session.id }) else { return }
 
         if sessions[index].participantIDs.contains(userId) { return }
+        
         if sessions[index].participantIDs.count >= sessions[index].maxPeople {
             errorMessage = "Session complète"
             return
         }
 
         do {
+            // rejoindre la session
             try await db.collection("sessions")
                 .document(session.id)
                 .updateData([
                     "participantIDs": FieldValue.arrayUnion([userId])
                 ])
 
-            if !sessions[index].participantIDs.contains(userId) {
-                sessions[index].participantIDs.append(userId)
+            // rejoindre le chat
+            let chatRef = db.collection("chats").document(session.id)
+            let chatDoc = try await chatRef.getDocument()
+
+            if chatDoc.exists {
+                try await chatRef.updateData([
+                    "participantIDs": FieldValue.arrayUnion([userId])
+                ])
+            } else {
+                try await chatRef.setData([
+                    "id": session.id,
+                    "sessionId": session.id,
+                    "participantIDs": [userId],
+                    "type": "session",
+                    "createdAt": Timestamp(date: Date()),
+                    "lastMessage": "",
+                    "lastMessageDate": Timestamp(date: Date())
+                ], merge: true)
             }
 
+            // Update local
+            sessions[index].participantIDs.append(userId)
             updateSelectedSpotSessions()
 
         } catch {

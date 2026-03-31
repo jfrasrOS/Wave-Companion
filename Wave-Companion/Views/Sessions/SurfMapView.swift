@@ -13,6 +13,17 @@ struct SurfMapView: View {
         center: CLLocationCoordinate2D(latitude: 46.6, longitude: 2.4),
         span: MKCoordinateSpan(latitudeDelta: 7, longitudeDelta: 7)
     )
+    
+    @Binding var selectedTab: TabItem
+    @Binding var selectedChatId: String?
+    
+    init(
+        selectedTab: Binding<TabItem>,
+        selectedChatId: Binding<String?>
+    ) {
+        _selectedTab = selectedTab
+        _selectedChatId = selectedChatId
+    }
 
     var body: some View {
         NavigationStack {
@@ -38,7 +49,9 @@ struct SurfMapView: View {
             }
             .navigationDestination(for: SurfSession.self) { session in
                 SessionDetailView(
-                    vm: SessionDetailViewModel(session: session)
+                    vm: SessionDetailViewModel(session: session),
+                    selectedTab: $selectedTab,
+                    selectedChatId: $selectedChatId
                 )
             }
             .sheet(isPresented: $showingCreate) {
