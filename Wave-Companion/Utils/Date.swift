@@ -20,11 +20,11 @@ extension Date {
         let calendar = Calendar.current
         
         if calendar.isDateInToday(self) {
-            Self.sessionFormatter.dateFormat = "'Aujourd’hui' HH'h'mm"
+            Self.sessionFormatter.dateFormat = "'Aujourd’hui à' HH'h'mm"
         } else if calendar.isDateInTomorrow(self) {
-            Self.sessionFormatter.dateFormat = "'Demain' HH'h'mm"
+            Self.sessionFormatter.dateFormat = "'Demain à' HH'h'mm"
         } else {
-            Self.sessionFormatter.dateFormat = "dd MMM HH'h'mm"
+            Self.sessionFormatter.dateFormat = "dd MMM 'à' HH'h'mm"
         }
         
         return Self.sessionFormatter.string(from: self)

@@ -53,15 +53,41 @@ extension CommunityView {
     
     var chatList: some View {
         List {
-            ForEach(vm.chats) { chat in
-                Button {
-                    path.append(chat.id)
-                } label: {
-                    ChatRowView(chat: chat)
+            
+            // Section Chats actifs
+            if !vm.activeChats.isEmpty {
+                Section("Chats actifs") {
+                    ForEach(vm.activeChats) { chat in
+                        Button {
+                            path.append(chat.id)
+                        } label: {
+                            ChatRowView(chat: chat, isExpired: false)
+                        }
+                    }
                 }
             }
+            
+            // Section Historique
+            if !vm.pastChats.isEmpty {
+                Section("Historique") {
+                    ForEach(vm.pastChats.prefix(10)) { chat in
+                        Button {
+                            path.append(chat.id)
+                        } label: {
+                            ChatRowView(chat: chat, isExpired: true)
+                        }
+                    }
+                }
+            }
+            // Section Amis
+            Section("Amis") {
+                Text("Aucun ami pour le moment")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
         }
-        .listStyle(.plain)
+        .listStyle(.insetGrouped)
     }
     
 }
@@ -90,37 +116,65 @@ extension CommunityView {
 struct ChatRowView: View {
     
     let chat: Chat
+    let isExpired: Bool
     
     var body: some View {
         HStack(spacing: 12) {
             
+            // Avatar groupe
             Circle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(isExpired ? Color.gray.opacity(0.2) : AppColors.primary.opacity(0.2))
                 .frame(width: 50, height: 50)
                 .overlay(
-                    Image(systemName: "person.2.fill")
-                        .foregroundColor(.white)
+                    Image(systemName: "waveform.path.ecg")
+                        .foregroundColor(isExpired ? .gray : AppColors.primary)
                 )
             
             VStack(alignment: .leading, spacing: 4) {
                 
-                Text("Session")
+                // NOM SPOT
+                Text(chat.spotName ?? "Session")
                     .font(.headline)
+                    .foregroundColor(isExpired ? .gray : .primary)
                 
-                Text(chat.lastMessage ?? "Aucun message")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                // DATE + HEURE
+                if let date = chat.sessionDate {
+                    VStack(alignment: .leading, spacing: 2) {
+                        
+                        Text(date.sessionFormatted)
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                        
+                        if isExpired {
+                            Text("Session terminée")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+                
+                // PARTICIPANTS
+                if let count = chat.participantCount {
+                    Text("\(count) participants")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
             
             Spacer()
             
-            if let date = chat.lastMessageDate {
-                Text(date.formatted(date: .omitted, time: .shortened))
+            // STATUS
+            if isExpired {
+                Text("Terminé")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.gray)
+            } else {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 8, height: 8)
             }
         }
         .padding(.vertical, 6)
+        .opacity(isExpired ? 0.6 : 1)
     }
 }

@@ -7,30 +7,36 @@ import MapKit
 @MainActor
 final class SessionViewModel: ObservableObject {
 
-    // Liste des spots dispo
+    // Liste des spots dispo (local JSON)
     @Published var spots: [Spot] = []
 
-    // Sessions actuellement visibles sur la carte
+    // Sessions visibles sur la carte (temps réel Firestore)
     @Published var sessions: [SurfSession] = []
 
-    // Spot actuellement sélectionné
+    // Spot sélectionné par l'utilisateur
     @Published var selectedSpotID: String? {
         didSet { updateSelectedSpotSessions() }
     }
+    // Sessions filtrées pour un spot
     @Published var sessionsForSelectedSpot: [SurfSession] = []
-
+    // Loading UI
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
+    // Firestore
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
+
+    // Debounce pour éviter trop de requêtes map
     private var regionDebounceTask: Task<Void, Never>?
     
+    //User
     private let surfLevels = SurfLevelService.loadLevels()
     @Published var currentUserLevelId: String?
     
     private var currentRegion: MKCoordinateRegion?
     
+    // Niveau de surf
     func levelOrder(for id: String) -> Int? {
         surfLevels.first { $0.id == id }?.order
     }
@@ -39,10 +45,8 @@ final class SessionViewModel: ObservableObject {
         surfLevels.first { $0.id == levelId }?.category ?? levelId
     }
     
+    // Vérifie si user peut voir la session
     func userCanSee(session: SurfSession) -> Bool {
-
-        print("USER LEVEL:", currentUserLevelId ?? "nil")
-        print("SESSION MIN LEVEL RAW:", session.minimumLevel)
 
         guard let userLevelId = currentUserLevelId else { return false }
 
@@ -50,23 +54,20 @@ final class SessionViewModel: ObservableObject {
             let userOrder = levelOrder(for: userLevelId),
             let sessionOrder = levelOrder(for: session.minimumLevel)
         else {
-            print("ORDER NOT FOUND")
             return false
         }
-
-        print("USER ORDER:", userOrder)
-        print("SESSION ORDER:", sessionOrder)
 
         return userOrder >= sessionOrder
     }
     
+    // User data
     func loadCurrentUserLevel() {
 
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
         db.collection("users")
             .document(uid)
-            .getDocument { [weak self] snapshot, error in
+            .getDocument { [weak self] snapshot, _ in
 
                 guard let self else { return }
                 guard let data = snapshot?.data() else { return }
@@ -75,9 +76,8 @@ final class SessionViewModel: ObservableObject {
 
                 Task { @MainActor in
                     self.currentUserLevelId = levelId
-
-                    print("USER LEVEL LOADED:", self.currentUserLevelId ?? "nil")
-
+                    
+                    // Recharge sessions si map déjà active
                     if let region = self.currentRegion {
                         self.loadSessions(for: region)
                     }
@@ -85,12 +85,12 @@ final class SessionViewModel: ObservableObject {
             }
     }
     
-
+    // Spots
     func loadSpots() {
         spots = SpotService.loadAllSpots()
     }
 
-    // Vérifie si un spot a au moins une session ouverte/future
+    // Vérifie si un spot contient au moins une session active
     func hasSession(for spot: Spot) -> Bool {
         sessions.contains {
             $0.latitude == spot.latitude &&
@@ -100,7 +100,8 @@ final class SessionViewModel: ObservableObject {
         }
     }
 
-    // Listener dynamique selon zone visible
+
+    // Map listener
     func startSessionListener(for region: MKCoordinateRegion) {
         currentRegion = region
         regionDebounceTask?.cancel()
@@ -108,6 +109,7 @@ final class SessionViewModel: ObservableObject {
     }
 
     func loadSessions(for region: MKCoordinateRegion) {
+        
         listener?.remove()
 
         let minLat = region.center.latitude - region.span.latitudeDelta / 2
@@ -115,14 +117,13 @@ final class SessionViewModel: ObservableObject {
         let minLng = region.center.longitude - region.span.longitudeDelta / 2
         let maxLng = region.center.longitude + region.span.longitudeDelta / 2
 
-        print("Nouvelle zone carte")
-
         listener = db.collection("sessions")
             .whereField("status", isEqualTo: "open")
             .whereField("date", isGreaterThan: Timestamp(date: Date()))
             .addSnapshotListener { [weak self] snapshot, error in
+                
                 guard let self else { return }
-
+                
                 if let error {
                     print("Firestore error:", error)
                     return
@@ -130,16 +131,13 @@ final class SessionViewModel: ObservableObject {
 
                 guard let docs = snapshot?.documents else { return }
 
-                print("Sessions Firestore:", docs.count)
-
-                let allSessions = docs.compactMap { doc -> SurfSession? in
-                    try? doc.data(as: SurfSession.self)
+                let allSessions = docs.compactMap {
+                    try? $0.data(as: SurfSession.self)
                 }
-                
-                print("ALL SESSIONS:", allSessions.count)
 
+                // Filtrage zone + niveau
                 self.sessions = allSessions.filter { s in
-
+                    
                     let inRegion =
                         s.latitude >= minLat &&
                         s.latitude <= maxLat &&
@@ -151,12 +149,11 @@ final class SessionViewModel: ObservableObject {
                     return inRegion && levelAllowed
                 }
 
-                print("Sessions dans zone:", self.sessions.count)
                 self.updateSelectedSpotSessions()
             }
     }
 
-    // Récupère les sessions pour un spot donné
+    // filtre spot
     func sessions(for spot: Spot) -> [SurfSession] {
         sessions.filter { $0.spotId == spot.id }
     }
@@ -182,17 +179,17 @@ final class SessionViewModel: ObservableObject {
     ) async {
 
         guard date > Date() else {
-            errorMessage = "Impossible de créer une session dans le passé"
+            errorMessage = "Session passée interdite"
             return
         }
 
         guard let userId = Auth.auth().currentUser?.uid else {
-            errorMessage = "Utilisateur non connecté"
+            errorMessage = "User non connecté"
             return
         }
 
         guard let spot = spots.first(where: { $0.id == selectedSpotID }) else {
-            errorMessage = "Veuillez sélectionner un spot"
+            errorMessage = "Sélectionne un spot"
             return
         }
         
@@ -201,7 +198,7 @@ final class SessionViewModel: ObservableObject {
               let sessionOrder = levelOrder(for: minLevel),
               sessionOrder <= userOrder
         else {
-            errorMessage = "Tu ne peux pas créer une session avec un niveau supérieur au tien"
+            errorMessage = "Niveau insuffisant"
             return
         }
 
@@ -232,7 +229,8 @@ final class SessionViewModel: ObservableObject {
         updateSelectedSpotSessions()
 
         do {
-            // Créer session
+          
+            //Créer session
             try await db.collection("sessions")
                 .document(sessionId)
                 .setData([
@@ -252,7 +250,13 @@ final class SessionViewModel: ObservableObject {
                     "status": newSession.status.rawValue
                 ])
 
-            // Créer le chat de session
+            // Calcul fin du chat
+            let endAt = min(
+                date.addingTimeInterval(4 * 3600),
+                Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: date)!
+            )
+
+            // Création du chat
             try await db.collection("chats")
                 .document(sessionId)
                 .setData([
@@ -263,23 +267,26 @@ final class SessionViewModel: ObservableObject {
                     "type": "session",
                     "createdAt": Timestamp(date: Date()),
                     "lastMessage": "",
-                    "lastMessageDate": Timestamp(date: Date())
+                    "lastMessageDate": Timestamp(date: Date()),
+                    "spotName": spot.name,
+                    "sessionDate": Timestamp(date: date),
+                    "participantCount": 1,
+                    "endAt": Timestamp(date: endAt)
                 ])
 
         } catch {
             errorMessage = error.localizedDescription
         }
-
-        updateSelectedSpotSessions()
     }
 
+    // Rejoindre une session
     @MainActor
     func joinSession(_ session: SurfSession) async {
 
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
         guard userCanSee(session: session) else {
-            errorMessage = "Niveau insuffisant pour cette session"
+            errorMessage = "Niveau insuffisant"
             return
         }
         
@@ -293,39 +300,51 @@ final class SessionViewModel: ObservableObject {
         }
 
         do {
-            // rejoindre la session
+            // Rejoindre une session (safe avec arrayUnion)
             try await db.collection("sessions")
                 .document(session.id)
                 .updateData([
                     "participantIDs": FieldValue.arrayUnion([userId])
                 ])
 
-            // rejoindre le chat
-            let chatRef = db.collection("chats").document(session.id)
-            let chatDoc = try await chatRef.getDocument()
-
-            if chatDoc.exists {
-                try await chatRef.updateData([
-                    "participantIDs": FieldValue.arrayUnion([userId])
+            // Rejoindre le chat (sync UI)
+            try await db.collection("chats")
+                .document(session.id)
+                .updateData([
+                    "participantIDs": FieldValue.arrayUnion([userId]),
+                    "participantCount": FieldValue.increment(Int64(1))
                 ])
-            } else {
-                try await chatRef.setData([
-                    "id": session.id,
-                    "sessionId": session.id,
-                    "participantIDs": [userId],
-                    "type": "session",
-                    "createdAt": Timestamp(date: Date()),
-                    "lastMessage": "",
-                    "lastMessageDate": Timestamp(date: Date())
-                ], merge: true)
-            }
 
-            // Update local
+            // Update local UI
             sessions[index].participantIDs.append(userId)
             updateSelectedSpotSessions()
 
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    // Quitter une session
+    func leaveSession(_ session: SurfSession) async {
+        
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+
+        do {
+            try await db.collection("sessions")
+                .document(session.id)
+                .updateData([
+                    "participantIDs": FieldValue.arrayRemove([userId])
+                ])
+
+            try await db.collection("chats")
+                .document(session.id)
+                .updateData([
+                    "participantIDs": FieldValue.arrayRemove([userId]),
+                    "participantCount": FieldValue.increment(Int64(-1))
+                ])
+            
+        } catch {
+            print("leave session error:", error)
         }
     }
 }

@@ -18,6 +18,34 @@ final class ChatListViewModel: ObservableObject {
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
     
+    var activeChats: [Chat] {
+        let now = Date()
+        return chats
+            .filter {
+                guard let endAt = $0.endAt else { return true }
+                return endAt > now
+            }
+            .sorted {
+                ($0.sessionDate ?? Date.distantFuture) <
+                ($1.sessionDate ?? Date.distantFuture)
+            }
+    }
+
+    var pastChats: [Chat] {
+        let now = Date()
+        return chats
+            .filter {
+                guard let endAt = $0.endAt else { return false }
+                return endAt <= now
+            }
+            .sorted {
+                ($0.sessionDate ?? Date.distantPast) >
+                ($1.sessionDate ?? Date.distantPast)
+            }
+    }
+    
+    
+    
     func listenChats() {
         
         guard let userId = Auth.auth().currentUser?.uid else { return }
@@ -27,6 +55,7 @@ final class ChatListViewModel: ObservableObject {
         listener = db.collection("chats")
             .whereField("participantIDs", arrayContains: userId)
             .order(by: "lastMessageDate", descending: true)
+            .limit(to: 20)
             .addSnapshotListener { [weak self] snapshot, error in
                 
                 guard let self else { return }
@@ -51,5 +80,7 @@ final class ChatListViewModel: ObservableObject {
                 
                 print("FILTERED chats:", self.chats.count)
             }
+        
+        
     }
 }

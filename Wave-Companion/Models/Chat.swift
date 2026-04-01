@@ -15,6 +15,12 @@ struct Chat: Identifiable, Codable, Hashable {
     var lastMessageDate: Date?
     var createdAt: Date
     var type: ChatType
+    
+    var spotName: String?
+    var sessionDate: Date?
+    var participantCount: Int?
+    
+    var endAt: Date?
 }
 
 enum ChatType: String, Codable, Hashable {
