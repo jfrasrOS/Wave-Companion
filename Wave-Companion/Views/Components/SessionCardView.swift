@@ -20,24 +20,38 @@ struct SessionCardView: View {
         max(0, session.maxPeople - participants.count)
     }
     
+    var participantText: String {
+        let count = participants.count
+        return "\(count) participant\(count > 1 ? "s" : "")"
+    }
+    
+    var isPast: Bool {
+        session.date < Date()
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             
-            // Header optionnel
-            if let sessionTitle, let titleColor {
-                HStack(spacing: 6) {
-                    
+            // Header
+            HStack(spacing: 8) {
+                
+                Text(session.spotName)
+                    .font(.title3.weight(.semibold))
+                
+                if let sessionTitle, let titleColor {
                     Text(sessionTitle)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(titleColor.opacity(0.15))
                         .foregroundColor(titleColor)
-                    
-                    Spacer()
+                        .clipShape(Capsule())
                 }
+                
+                Spacer()
             }
             
             VStack(alignment: .leading, spacing: 10) {
-                Text(session.spotName)
-                    .font(.title3.weight(.semibold))
                 
                 Text(session.date.sessionFormatted)
                     .font(.subheadline)
@@ -57,26 +71,29 @@ struct SessionCardView: View {
                     .clipShape(Capsule())
                     
                     // Badge places restantes
-                    HStack(spacing: 6) {
-                        Image(systemName: "person.2.fill")
-                        Text(
-                            remaining == 0
-                            ? "Session pleine"
-                            : "\(remaining) place\(remaining > 1 ? "s" : "") restante\(remaining > 1 ? "s" : "")"
-                        )
+                    if !isPast {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.2.fill")
+                            Text(
+                                remaining == 0
+                                ? "Complet"
+                                : "\(remaining) place\(remaining > 1 ? "s" : "")"
+                            )
+                        }
+                        .font(.caption.weight(.medium))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(badgeColor())
+                        .clipShape(Capsule())
+                        
                     }
-                    .font(.caption.weight(.medium))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(badgeColor())
-                    .clipShape(Capsule())
                 }
             }
             
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     AvatarStackView(imageURLs: participants)
-                    Text("\(participants.count) surfeurs participent")
+                    Text(participantText)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -118,6 +135,7 @@ struct SessionCardView: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(AppColors.primary, lineWidth: 1)
         )
+        .opacity(isPast ? 0.8 : 1)
     }
     
     func badgeColor() -> Color {

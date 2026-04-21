@@ -24,9 +24,7 @@ struct MySessionsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     
-                    if let nextSession = vm.upcomingSessions.first {
-                        NextSessionSection(session: nextSession, vm: vm)
-                    }
+                    SessionsHorizontalSection(vm: vm)
                     
                     HeatmapSection(
                         vm: vm,
@@ -74,30 +72,76 @@ struct MySessionsView: View {
     }
 }
 
-// Prochaine session
-struct NextSessionSection: View {
+struct SessionsHorizontalSection: View {
+    
+    @ObservedObject var vm: MySessionsViewModel
+    
+    var body: some View {
+        
+        VStack(alignment: .leading, spacing: 12) {
+            
+            Text("Tes sessions")
+                .font(.headline)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                
+                HStack(spacing: 16) {
+                    
+                    ForEach(vm.orderedSessions.prefix(10)) { session in
+                        
+                        let isNext = vm.isNextSession(session)
+                        let isPast = vm.isPastSession(session)
+                        
+                        SessionHorizontalCardWrapper(
+                            session: session,
+                            vm: vm,
+                            isNext: isNext,
+                            isPast: isPast
+                        )
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+    }
+}
+
+struct SessionHorizontalCardWrapper: View {
     
     let session: SurfSession
     let vm: MySessionsViewModel
+    let isNext: Bool
+    let isPast: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Prochaine session")
-                .font(.headline)
+        
+        NavigationLink(value: session) {
             
-            NavigationLink(value: session) {
-                SessionCardView(
-                    session: session,
-                    levelText: "Min. \(vm.category(for: session.minimumLevel))",
-                    sessionTitle: nil,
-                    titleColor: nil,
-                    buttonTitle: "Voir",
-                    buttonEnabled: true,
-                    onButtonTap: {}
-                )
-            }
-            .buttonStyle(.plain)
+            SessionCardView(
+                session: session,
+                levelText: "Min. \(vm.category(for: session.minimumLevel))",
+                sessionTitle: title,
+                titleColor: titleColor,
+                buttonTitle: "Voir",
+                buttonEnabled: true,
+                onButtonTap: {}
+            )
+            .frame(width: 280)
         }
+        .buttonStyle(.plain)
+    }
+    
+
+    var title: String? {
+        if isNext { return "Prochaine" }
+        if isPast { return "Passée" }
+        return "À venir"
+    }
+    
+    var titleColor: Color? {
+        if isNext { return AppColors.action }
+        if isPast { return .gray }
+        return .secondary
     }
 }
 

@@ -144,12 +144,6 @@ struct ChatRowView: View {
                         Text(date.sessionFormatted)
                             .font(.caption2)
                             .foregroundColor(.gray)
-                        
-                        if isExpired {
-                            Text("Session terminée")
-                                .font(.caption2)
-                                .foregroundColor(.gray)
-                        }
                     }
                 }
                 

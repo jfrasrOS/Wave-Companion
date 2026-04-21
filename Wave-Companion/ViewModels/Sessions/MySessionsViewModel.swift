@@ -9,7 +9,6 @@ final class MySessionsViewModel: ObservableObject {
     
     @Published var allSessions: [SurfSession] = []
     @Published var upcomingSessions: [SurfSession] = []
-    @Published var ongoingSessions: [SurfSession] = []
     @Published var pastSessions: [SurfSession] = []
     
     private let surfLevels = SurfLevelService.loadLevels()
@@ -66,7 +65,6 @@ final class MySessionsViewModel: ObservableObject {
         
         // Par ordre croissant
         upcomingSessions = upcoming.sorted { $0.date < $1.date }
-        ongoingSessions = ongoing.sorted { $0.date < $1.date }
         pastSessions = past.sorted { $0.date > $1.date }
     }
     
@@ -97,5 +95,20 @@ final class MySessionsViewModel: ObservableObject {
     
     func sessionsCount(on date: Date) -> Int {
         sessions(on: date).count
+    }
+    
+    
+    // Ordre des sessions (prochaine/bientot/passées)
+    var orderedSessions: [SurfSession] {
+        upcomingSessions + pastSessions
+    }
+
+    func isNextSession(_ session: SurfSession) -> Bool {
+        guard let first = upcomingSessions.first else { return false }
+        return session.id == first.id
+    }
+
+    func isPastSession(_ session: SurfSession) -> Bool {
+        session.date < Date()
     }
 }
