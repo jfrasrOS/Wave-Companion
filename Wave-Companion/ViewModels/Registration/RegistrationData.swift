@@ -14,7 +14,7 @@ struct RegistrationData {
     var boardType: String = ""
     var boardSize: String = ""
     var boardColor: String = ""
-    
+    var friends : [String] = []
     var favoriteSpotIDs: [String] = []
     
     // Crée une instance User à partir des données saisies 
@@ -35,6 +35,7 @@ struct RegistrationData {
             boardColor: boardColor,
             favoriteSpotIDs: favoriteSpotIDs,
             profileImage: nil,
+            friends: []
             
         )
     }

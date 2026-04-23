@@ -39,7 +39,8 @@ final class LoginService {
                 boardSize: data["boardSize"] as? String ?? "",
                 boardColor: data["boardColor"] as? String ?? "",
                 favoriteSpotIDs: data["favoriteSpotIDs"] as? [String] ?? [],
-                profileImage: data["profileImage"] as? String
+                profileImage: data["profileImage"] as? String,
+                friends: data["friends"] as? [String] ?? []
             )
 
             return .completed(user)
@@ -57,7 +58,8 @@ final class LoginService {
             boardSize: "",
             boardColor: "",
             favoriteSpotIDs: [],
-            profileImage: nil
+            profileImage: nil,
+            friends: []
         )
 
         return .incomplete(minimalUser)

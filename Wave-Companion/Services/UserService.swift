@@ -86,7 +86,8 @@ final class UserService {
             boardSize: data["boardSize"] as? String ?? "",
             boardColor: data["boardColor"] as? String ?? "",
             favoriteSpotIDs: data["favoriteSpotIDs"] as? [String] ?? [],
-            profileImage: data["profileImage"] as? String
+            profileImage: data["profileImage"] as? String,
+            friends: data["friends"] as? [String] ?? []
         )
     }
     

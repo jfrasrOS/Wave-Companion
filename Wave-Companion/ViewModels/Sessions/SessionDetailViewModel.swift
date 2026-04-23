@@ -13,6 +13,10 @@ final class SessionDetailViewModel: ObservableObject {
 
     @Published var session: SurfSession
     @Published var participants: [SessionUser] = []
+    
+    @Published var currentUserId: String = ""
+    @Published var currentUserFriends: [String] = []
+    @Published var sentRequests: Set<String> = []
 
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
@@ -20,11 +24,26 @@ final class SessionDetailViewModel: ObservableObject {
     init(session: SurfSession) {
         self.session = session
         observeParticipants()
+        loadCurrentUser()
+        listenSentRequests()
     }
 
     deinit {
         listener?.remove()
         listener = nil
+    }
+    
+    // Récupérer le User
+    func loadCurrentUser() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        currentUserId = uid
+        
+        db.collection("users").document(uid)
+            .addSnapshotListener { [weak self] snapshot, _ in
+                let data = snapshot?.data()
+                self?.currentUserFriends = data?["friends"] as? [String] ?? []
+            }
     }
 
     // Listener sur les participants
@@ -61,4 +80,32 @@ final class SessionDetailViewModel: ObservableObject {
         listener?.remove()
         listener = nil
     }
+    
+    // Envoie la requete
+    func sendFriendRequest(to userId: String) {
+        Task {
+            try? await FriendService.shared.sendFriendRequest(
+                to: userId,
+                sessionId: session.id
+            )
+        }
+    }
+    
+    
+    func listenSentRequests() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        db.collection("friendRequests")
+            .whereField("from", isEqualTo: uid)
+            .whereField("status", isEqualTo: "pending")
+            .addSnapshotListener { [weak self] snapshot, _ in
+                
+                let ids = snapshot?.documents.compactMap {
+                    $0.data()["to"] as? String
+                } ?? []
+                
+                self?.sentRequests = Set(ids)
+            }
+    }
+    
 }

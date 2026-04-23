@@ -1,10 +1,3 @@
-//
-//  SessionDetailView.swift
-//  Wave-Companion
-//
-//  Created by John on 24/03/2026.
-//
-
 import SwiftUI
 
 struct SessionDetailView: View {
@@ -13,111 +6,79 @@ struct SessionDetailView: View {
     @Binding var selectedTab: TabItem
     @Binding var selectedChatId: String?
     
+    var isPast: Bool {
+        vm.session.date < Date()
+    }
+    
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 
                 header
                 
-                conditionsCard
-                
                 participantsSection
+                
+                conditionsSection
             }
             .padding()
-            Button {
-                selectedChatId = vm.session.chatId
-                selectedTab = .community
-            } label: {
-                Text("Ouvrir le chat")
-                    .bold()
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(AppColors.primary)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-            }
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Session")
         .navigationBarTitleDisplayMode(.inline)
+        
+        .safeAreaInset(edge: .bottom) {
+            chatButton
+        }
     }
 }
 
+// Header
 extension SessionDetailView {
     
     var header: some View {
-        ZStack(alignment: .bottomLeading) {
+        VStack(alignment: .leading, spacing: 6) {
             
-            RoundedRectangle(cornerRadius: 24)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.blue.opacity(0.6), Color.blue.opacity(0.2)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(height: 180)
+            Text(vm.session.spotName)
+                .font(.title2.bold())
             
-            VStack(alignment: .leading, spacing: 6) {
-                
-                Text(vm.session.spotName)
-                    .font(.title.bold())
-                    .foregroundColor(.white)
-                
-                Text(vm.session.date.sessionFormatted)
-                    .foregroundColor(.white.opacity(0.9))
-            }
-            .padding()
-        }
-    }
-}
-
-extension SessionDetailView {
-    
-    var conditionsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            
-            Text("Conditions")
-                .font(.headline)
-            
-            HStack(spacing: 20) {
-                
-                conditionItem(icon: "water.waves", value: "1.2m", label: "Houle")
-                conditionItem(icon: "wind", value: "Offshore", label: "Vent")
-                conditionItem(icon: "clock", value: "12s", label: "Période")
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.systemBackground))
-        )
-    }
-    
-    func conditionItem(icon: String, value: String, label: String) -> some View {
-        VStack {
-            Image(systemName: icon)
-            Text(value).bold()
-            Text(label)
-                .font(.caption)
+            Text(vm.session.date.sessionFormatted)
+                .font(.subheadline)
                 .foregroundColor(.secondary)
         }
     }
 }
 
+// Participants
 extension SessionDetailView {
     
     var participantsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             
-            Text("Participants")
-                .font(.headline)
+            HStack {
+                Text("Participants")
+                    .font(.headline)
+                
+                Spacer()
+                
+                Text("\(vm.participants.count)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     
                     ForEach(vm.participants) { user in
-                        ParticipantCard(user: user)
+                        ParticipantCard(
+                            user: user,
+                            isPast: isPast,
+                            currentUserId: vm.currentUserId,
+                            isFriend: vm.currentUserFriends.contains(user.id),
+                            isPending: vm.sentRequests.contains(user.id),
+                            onAddFriend: {
+                                vm.sendFriendRequest(to: user.id)
+                            }
+                        )
                     }
                 }
             }
@@ -125,56 +86,145 @@ extension SessionDetailView {
     }
 }
 
+// Conditions météo
+extension SessionDetailView {
+    
+    var conditionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            
+            Text("Conditions")
+                .font(.headline)
+            
+            HStack(spacing: 8) {
+                conditionChip("1.2m")
+                conditionChip("Offshore")
+                conditionChip("12s")
+            }
+        }
+    }
+    
+    func conditionChip(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color(.systemGray6))
+            .cornerRadius(10)
+    }
+}
+
+// Bouton vers le chat session
+extension SessionDetailView {
+    
+    var chatButton: some View {
+        Button {
+            selectedTab = .community
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                selectedChatId = vm.session.chatId
+            }
+            
+        } label: {
+            Text("Ouvrir le chat")
+                .bold()
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(AppColors.primary)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .padding(.horizontal)
+                .padding(.top, 8)
+        }
+        .background(.ultraThinMaterial)
+    }
+}
+
+// Participants card
 struct ParticipantCard: View {
     
     let user: SessionUser
+    let isPast: Bool
+    let currentUserId: String
+    let isFriend: Bool
+    let isPending: Bool
+    let onAddFriend: (() -> Void)?
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             
-            ZStack(alignment: .topLeading) {
+            // Avatar + flag
+            ZStack(alignment: .topTrailing) {
                 
                 Circle()
                     .fill(Color.gray.opacity(0.2))
-                    .frame(width: 70, height: 70)
+                    .frame(width: 60, height: 60)
                 
                 Text(flag(from: user.nationality))
-                    .font(.caption)
-                    .padding(4)
-                    .background(Color.white)
+                    .font(.caption2)
+                    .padding(3)
+                    .background(.white)
                     .clipShape(Circle())
-                    .offset(x: -6, y: -6)
+                    .offset(x: 4, y: -4)
             }
             
             Text(user.name)
-                .font(.caption)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
             
-            VStack(spacing: 4) {
-
-                ZStack {
-                    Image(user.boardType.lowercased())
-                        .resizable()
-                        .scaledToFit()
-
-                    Image(user.boardType.lowercased())
-                        .resizable()
-                        .scaledToFit()
-                        .colorMultiply(Color(hex: user.boardColor))
-                }
-                .frame(width: 50, height: 40)
-
-                Text(user.boardSize)
-                    .font(.caption2.bold())
-
-                Text(user.boardType)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+            // Board
+            ZStack {
+                Image(user.boardType.lowercased())
+                    .resizable()
+                    .scaledToFit()
+                
+                Image(user.boardType.lowercased())
+                    .resizable()
+                    .scaledToFit()
+                    .colorMultiply(Color(hex: user.boardColor))
             }
-            .padding(6)
-            .background(Color(.systemGray6))
-            .cornerRadius(10)
+            .frame(width: 45, height: 30)
+            
+            Text("\(user.boardSize) • \(user.boardType)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            
+            // Logique ami/envoyé/ajouter
+            if isPast && user.id != currentUserId {
+                
+                if isFriend {
+                    Text("Ami")
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.green.opacity(0.2))
+                        .clipShape(Capsule())
+                    
+                } else if isPending {
+                    Text("Envoyé")
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.gray.opacity(0.2))
+                        .clipShape(Capsule())
+                    
+                } else {
+                    Button("Ajouter") {
+                        onAddFriend?()
+                    }
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(AppColors.action)
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+                }
+            }
         }
-        .frame(width: 90)
+        .frame(width: 110)
+        .padding(10)
+        .background(Color(.systemBackground))
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.03), radius: 6)
     }
     
     func flag(from country: String) -> String {

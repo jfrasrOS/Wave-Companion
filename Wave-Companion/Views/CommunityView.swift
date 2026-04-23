@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
 
 struct CommunityView: View {
     
@@ -14,6 +15,7 @@ struct CommunityView: View {
     
     @State private var path: [String] = []
     @StateObject private var vm = ChatListViewModel()
+    @StateObject private var friendsVM = FriendsViewModel()
     
     var body: some View {
         
@@ -45,6 +47,8 @@ struct CommunityView: View {
         
         .onAppear {
             vm.listenChats()
+            friendsVM.listenRequests()
+            friendsVM.listenFriends()
         }
     }
 }
@@ -81,9 +85,42 @@ extension CommunityView {
             }
             // Section Amis
             Section("Amis") {
-                Text("Aucun ami pour le moment")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                
+                // Demandes reçus
+                if !friendsVM.requests.isEmpty {
+                    
+                    ForEach(friendsVM.requests) { request in
+                        
+                        if let requestId = request.id {
+                            
+                            FriendRequestRow(request: request) {
+                                Task {
+                                    try? await FriendService.shared.acceptRequest(
+                                        requestId: requestId,
+                                        from: request.from
+                                    )
+                                }
+                            } onReject: {
+                                Task {
+                                    try? await FriendService.shared.rejectRequest(
+                                        requestId: requestId
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Liste des amis
+                if friendsVM.friends.isEmpty && friendsVM.requests.isEmpty {
+                    Text("Aucun ami pour le moment")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(friendsVM.friends) { user in
+                        FriendRow(user: user)
+                    }
+                }
             }
             
         }
@@ -170,5 +207,83 @@ struct ChatRowView: View {
         }
         .padding(.vertical, 6)
         .opacity(isExpired ? 0.6 : 1)
+    }
+}
+
+struct FriendRequestRow: View {
+    
+    let request: FriendRequest
+    let onAccept: () -> Void
+    let onReject: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            
+            // Avatar
+            if let url = request.fromAvatar, !url.isEmpty {
+                AsyncImage(url: URL(string: url)) { image in
+                    image.resizable()
+                } placeholder: {
+                    Circle().fill(Color.gray.opacity(0.2))
+                }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 40, height: 40)
+            }
+            
+            // Texte
+            VStack(alignment: .leading, spacing: 2) {
+                Text(request.fromName ?? "Surfeur")
+                    .font(.subheadline.bold())
+                
+            }
+            
+            Spacer()
+            
+            
+            // Actions
+            HStack(spacing: 8) {
+                
+                Button("Refuser") {
+                    onReject()
+                }
+                .font(.caption)
+                .foregroundColor(.gray)
+                
+                Button("Accepter") {
+                    onAccept()
+                }
+                .font(.caption.bold())
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(AppColors.action)
+                .foregroundColor(.white)
+                .clipShape(Capsule())
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct FriendRow: View {
+    
+    let user: User
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            
+            Circle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 40, height: 40)
+            
+            Text(user.name)
+                .font(.subheadline)
+            
+            Spacer()
+        }
+        .padding(.vertical, 4)
     }
 }

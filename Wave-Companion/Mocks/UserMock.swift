@@ -16,6 +16,7 @@ struct UserMock {
         boardSize: "7'2\"",
         boardColor: "#FFFFFF",
         favoriteSpotIDs: ["hossegor_la_sud", "hossegor_la_nord", "hossegor_la_graviere"],
-        profileImage: nil
+        profileImage: nil,
+        friends:["john", "paul"]
     )
 }

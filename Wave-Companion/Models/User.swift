@@ -14,6 +14,7 @@ struct User:Identifiable, Codable{
     var boardSize: String 
     var boardColor: String
     var favoriteSpotIDs: [String]
-    var profileImage: String? // optionnel, plus tard
+    var profileImage: String? // plus tard
+    var friends: [String]
 }
 
