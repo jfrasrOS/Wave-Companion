@@ -9,6 +9,7 @@ final class HomeViewModel: ObservableObject {
 
     @Published var user: User?
     @Published var surfLevelName: String = ""
+    @Published var categoryName: String = ""
     @Published var nextLevelSkills: [String] = []
     @Published var completedNextLevelSkills: Set<String> = []
 
@@ -51,6 +52,7 @@ final class HomeViewModel: ObservableObject {
 
         let currentLevel = levels[currentIndex]
         surfLevelName = currentLevel.name
+        categoryName = currentLevel.category
 
         // Si niveau supérieur existe
         if currentIndex + 1 < levels.count {

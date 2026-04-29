@@ -87,14 +87,19 @@ extension SurfMapView {
                             let isJoined = Auth.auth().currentUser.map { participants.contains($0.uid) } ?? false
                             let canJoin = !isJoined && remaining > 0
 
-                            SessionCardView(
+                            SessionHorizontalCard(
                                 session: session,
-                                levelText: "Min. \(vm.category(for: session.minimumLevel))",
-                                sessionTitle: isJoined ? "Ta prochaine session" : (remaining == 0 ? "Session complète" : "Session ouverte"),
-                                titleColor: isJoined ? .green : (remaining == 0 ? .red : .green),
-                                buttonTitle: isJoined ? "Voir" : (remaining == 0 ? "Complet" : "Rejoindre"),
+                                title: isJoined
+                                    ? "Ta prochaine"
+                                    : (remaining == 0 ? "Complète" : "Ouverte"),
+                                titleColor: isJoined
+                                    ? .green
+                                    : (remaining == 0 ? .red : .green),
+                                buttonTitle: isJoined
+                                    ? "Voir"
+                                    : (remaining == 0 ? "Complet" : "Rejoindre"),
                                 buttonEnabled: canJoin || isJoined,
-                                onButtonTap: {
+                                onTap: {
                                     if isJoined {
                                         selectedSession = session
                                         showSessionDetail = true

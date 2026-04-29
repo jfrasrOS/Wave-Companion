@@ -37,3 +37,14 @@ enum SessionStatus: String, Codable, Hashable {
     case finished
 }
 
+extension SurfSession {
+    
+    var city: String {
+        SpotService.spot(for: spotId)?.city ?? ""
+    }
+    
+    var region: String {
+        SpotService.spot(for: spotId)?.region ?? ""
+    }
+}
+

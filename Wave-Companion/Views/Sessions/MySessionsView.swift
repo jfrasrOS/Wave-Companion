@@ -117,14 +117,13 @@ struct SessionHorizontalCardWrapper: View {
         
         NavigationLink(value: session) {
             
-            SessionCardView(
+            SessionHorizontalCard(
                 session: session,
-                levelText: "Min. \(vm.category(for: session.minimumLevel))",
-                sessionTitle: title,
+                title: title,
                 titleColor: titleColor,
-                buttonTitle: "Voir",
-                buttonEnabled: true,
-                onButtonTap: {}
+                buttonTitle: "",
+                buttonEnabled: false,
+                onTap: {}
             )
             .frame(width: 280)
         }

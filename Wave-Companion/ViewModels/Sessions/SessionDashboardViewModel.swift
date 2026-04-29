@@ -8,14 +8,32 @@ import Combine
 final class SessionDashboardViewModel: NSObject, ObservableObject {
     
 
-    // Tous les états de la sessionCard
+    // Tous les états de la sessionCard sur la Home
     enum SessionCardState {
         case joined(session: SurfSession)
         case suggestion(main: SurfSession, others: [SurfSession])
         case noNearbySessions
         case locationDisabled
     }
+    
+    // Titre section Session sur la Home
+    var homeTitle: String {
+        switch state {
+        case .joined:
+            return "Ta prochaine session"
+    
+        case .suggestion:
+            return "Sessions autour de toi"
+            
+        case .noNearbySessions:
+            return "Sessions autour de toi"
+            
+        case .locationDisabled:
+            return "Sessions autour de toi"
+        }
+    }
 
+    // état actuel
     @Published var state: SessionCardState = .locationDisabled
     
     // Firestore + GPS
@@ -41,7 +59,7 @@ final class SessionDashboardViewModel: NSObject, ObservableObject {
     
     private let surfLevels = SurfLevelService.loadLevels()
 
-    // Converetit levelID en catégorie (UI)
+    // Convertit levelID en catégorie (texte)
     func category(for levelId: String) -> String {
         surfLevels.first { $0.id == levelId }?.category ?? levelId
     }
@@ -148,7 +166,16 @@ extension SessionDashboardViewModel {
                 )
                 
                 // distance en mètre (vol d'oiseau)
-                return location.distance(from: sessionLocation) < 30000
+                let isNearby = location.distance(from: sessionLocation) < 30000
+                
+                // Calcul participants uniques
+                let participants = Set(session.participantIDs).count
+                
+                // Calcul places restantes
+                let remaining = session.maxPeople - participants
+                
+                // Garde uniquement les sessions avec des places dispo
+                return isNearby && remaining > 0
             }
             .sorted { $0.date < $1.date }// tri chronologique
         

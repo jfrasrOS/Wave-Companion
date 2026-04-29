@@ -7,48 +7,41 @@ struct SurfLevelCard: View {
 
     var body: some View {
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
 
             HStack(spacing: 12) {
 
+                // Badge (logo à contruire)
                 Circle()
-                    .fill(AppColors.primary.opacity(0.15))
-                    .frame(width: 48, height: 48)
+                    .fill(Color.white)
+                    .frame(width: 44, height: 44)
                     .overlay(
-                        Image(systemName: "trophy.fill")
-                            .foregroundColor(AppColors.primary)
+                        Circle()
+                            .stroke(Color.black.opacity(0.05), lineWidth: 1)
                     )
-
-                let parts = vm.surfLevelName
-                                   .split(separator: "–")
-                                   .map { String($0).trimmingCharacters(in: .whitespaces) }
+                    .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    if parts.count == 2 {
-                        Text(parts[0])
-                            .font(.subheadline.weight(.semibold))
-                            .lineLimit(1)
 
-                        Text(parts[1])
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+
+                    Text(vm.categoryName)
+                        .font(.headline)
+
+                    Text(vm.surfLevelName)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.secondary.opacity(0.6))
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
 
                 if vm.nextLevelSkills.isEmpty {
+
                     Text("Niveau max atteint")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(AppColors.primary)
-                        .padding(.top, 8)
 
                 } else {
 
@@ -62,22 +55,35 @@ struct SurfLevelCard: View {
                         value: safeValue,
                         total: safeTotal
                     )
-                    .progressViewStyle(LinearProgressViewStyle(tint: AppColors.primary))
-                    .frame(height: 8)
-                    .padding(.top, 8)
-
-                    Text("\(Int(totalNext - completedNext)) compétences restantes pour atteindre le prochain niveau")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                    .progressViewStyle(
+                        LinearProgressViewStyle(tint: AppColors.primary)
+                    )
+                    .scaleEffect(y: 1.6)
                 }
             }
+
+            HStack {
+
+                Text("Voir ma progression")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(AppColors.primary)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(AppColors.primary.opacity(0.6))
+            }
+            .padding(.top, 4)
         }
         .padding(16)
-        .cornerRadius(18)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(AppColors.primary, lineWidth: 1)
+                .fill(AppColors.primary.opacity(0.03))
         )
-        .padding(.horizontal, 16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(AppColors.primary.opacity(0.08), lineWidth: 1)
+        )
     }
 }
