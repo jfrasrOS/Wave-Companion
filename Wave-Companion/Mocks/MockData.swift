@@ -22,6 +22,7 @@ enum MockData {
             maxPeople: 8,
             participantIDs: ["u1", "u2", "u3"],
             chatId: "chat_1",
+            chatEndAt: Date().addingTimeInterval(60 * 60 * 48),
             status: .open
         ),
         SurfSession(
@@ -38,6 +39,7 @@ enum MockData {
             maxPeople: 5,
             participantIDs: ["u1"],
             chatId: "chat_2",
+            chatEndAt: Date().addingTimeInterval(60 * 60 * 48),
             status: .open
         ),
         SurfSession(
@@ -54,6 +56,7 @@ enum MockData {
             maxPeople: 4,
             participantIDs: [],
             chatId: "chat_3",
+            chatEndAt: Date().addingTimeInterval(60 * 60 * 48),
             status: .open
         )
     ]

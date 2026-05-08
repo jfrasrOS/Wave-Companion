@@ -15,4 +15,5 @@ struct SessionUser: Identifiable, Codable, Hashable {
     let boardSize: String
     let boardColor: String
     let profileImage: String?
+    let level: String
 }

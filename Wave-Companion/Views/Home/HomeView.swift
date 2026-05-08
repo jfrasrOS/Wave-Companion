@@ -72,7 +72,7 @@ extension HomeView {
                 Text("Salut \(homeVM.user?.name ?? "surfeur") ! 👋")
                     .font(.title3)
                 
-                Text("Prêt pour une nouvelle session ?")
+                Text("Prêt(e) pour une nouvelle session ?")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }

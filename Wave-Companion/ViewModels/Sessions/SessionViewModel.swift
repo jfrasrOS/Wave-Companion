@@ -207,6 +207,12 @@ final class SessionViewModel: ObservableObject {
 
         let sessionId = UUID().uuidString
         let geohash = GeoHash.encode(latitude: spot.latitude, longitude: spot.longitude)
+        
+        let endAt = Calendar.current.date(
+            byAdding: .hour,
+            value: 48,
+            to: date
+        )!
 
         let newSession = SurfSession(
             id: sessionId,
@@ -222,6 +228,7 @@ final class SessionViewModel: ObservableObject {
             maxPeople: maxPeople,
             participantIDs: [userId],
             chatId: sessionId,
+            chatEndAt: endAt,
             status: .open
         )
 
@@ -247,14 +254,16 @@ final class SessionViewModel: ObservableObject {
                     "maxPeople": newSession.maxPeople,
                     "participantIDs": newSession.participantIDs,
                     "chatId": newSession.chatId,
+                    "chatEndAt": Timestamp(date: endAt),
                     "status": newSession.status.rawValue
                 ])
 
-            // Calcul fin du chat
-            let endAt = min(
-                date.addingTimeInterval(4 * 3600),
-                Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: date)!
-            )
+          
+            let endAt = Calendar.current.date(
+                byAdding: .hour,
+                value: 48,
+                to: date
+            )!
 
             // Création du chat
             try await db.collection("chats")

@@ -23,6 +23,8 @@ struct SurfSession: Identifiable, Codable, Hashable{
     
     var chatId: String
     
+    let chatEndAt: Date?
+    
     var status: SessionStatus
     
     var wavesCount: Int?
