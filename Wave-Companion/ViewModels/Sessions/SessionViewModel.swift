@@ -12,6 +12,7 @@ final class SessionViewModel: ObservableObject {
 
     // Sessions visibles sur la carte (temps réel Firestore)
     @Published var sessions: [SurfSession] = []
+    private var allSessions: [SurfSession] = []
 
     // Spot sélectionné par l'utilisateur
     @Published var selectedSpotID: String? {
@@ -27,13 +28,11 @@ final class SessionViewModel: ObservableObject {
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
 
-    // Debounce pour éviter trop de requêtes map
-    private var regionDebounceTask: Task<Void, Never>?
-    
     //User
     private let surfLevels = SurfLevelService.loadLevels()
     @Published var currentUserLevelId: String?
     
+    // Région actuellement visible sur la map
     private var currentRegion: MKCoordinateRegion?
     
     // Niveau de surf
@@ -48,6 +47,7 @@ final class SessionViewModel: ObservableObject {
     // Vérifie si user peut voir la session
     func userCanSee(session: SurfSession) -> Bool {
 
+        // User sans niveau -> accès refusé
         guard let userLevelId = currentUserLevelId else { return false }
 
         guard
@@ -57,6 +57,7 @@ final class SessionViewModel: ObservableObject {
             return false
         }
 
+        // Le niveau user doit être supérieur ou égal au niveau requis
         return userOrder >= sessionOrder
     }
     
@@ -75,11 +76,12 @@ final class SessionViewModel: ObservableObject {
                 let levelId = data["surfLevelId"] as? String
 
                 Task { @MainActor in
+
                     self.currentUserLevelId = levelId
-                    
-                    // Recharge sessions si map déjà active
+
+                    // Refiltre local des sessions
                     if let region = self.currentRegion {
-                        self.loadSessions(for: region)
+                        self.updateVisibleSessions(for: region)
                     }
                 }
             }
@@ -89,41 +91,55 @@ final class SessionViewModel: ObservableObject {
     func loadSpots() {
         spots = SpotService.loadAllSpots()
     }
+    
+    // Vérifie si le spot possède au moins une session ouverte
+    func hasOpenSession(for spot: Spot) -> Bool {
 
-    // Vérifie si un spot contient au moins une session active
-    func hasSession(for spot: Spot) -> Bool {
         sessions.contains {
-            $0.latitude == spot.latitude &&
-            $0.longitude == spot.longitude &&
-            $0.status == .open &&
-            $0.date > Date()
+
+            $0.spotId == spot.id
+            && userCanSee(session: $0)
+            && $0.status == .open
+            && $0.date > Date()
+            && $0.participantIDs.count < $0.maxPeople
         }
     }
 
+    // Vérifie si le spot possède uniquement des sessions complètes
+    func hasOnlyFullSession(for spot: Spot) -> Bool {
 
-    // Map listener
-    func startSessionListener(for region: MKCoordinateRegion) {
-        currentRegion = region
-        regionDebounceTask?.cancel()
-        regionDebounceTask = Task { loadSessions(for: region) }
+        let spotSessions = sessions.filter {
+
+            $0.spotId == spot.id
+            && userCanSee(session: $0)
+            && $0.date > Date()
+        }
+
+        guard !spotSessions.isEmpty else {
+            return false
+        }
+
+        let hasOpen = spotSessions.contains {
+
+            $0.status == .open
+            && $0.participantIDs.count < $0.maxPeople
+        }
+
+        return !hasOpen
     }
 
-    func loadSessions(for region: MKCoordinateRegion) {
-        
-        listener?.remove()
+    // Listener temps réel des sessions Firestore
+    func startGlobalSessionsListener() {
 
-        let minLat = region.center.latitude - region.span.latitudeDelta / 2
-        let maxLat = region.center.latitude + region.span.latitudeDelta / 2
-        let minLng = region.center.longitude - region.span.longitudeDelta / 2
-        let maxLng = region.center.longitude + region.span.longitudeDelta / 2
+        listener?.remove()
 
         listener = db.collection("sessions")
             .whereField("status", isEqualTo: "open")
             .whereField("date", isGreaterThan: Timestamp(date: Date()))
             .addSnapshotListener { [weak self] snapshot, error in
-                
+
                 guard let self else { return }
-                
+
                 if let error {
                     print("Firestore error:", error)
                     return
@@ -131,42 +147,104 @@ final class SessionViewModel: ObservableObject {
 
                 guard let docs = snapshot?.documents else { return }
 
-                let allSessions = docs.compactMap {
+                let all = docs.compactMap {
                     try? $0.data(as: SurfSession.self)
                 }
 
-                // Filtrage zone + niveau
-                self.sessions = allSessions.filter { s in
-                    
-                    let inRegion =
-                        s.latitude >= minLat &&
-                        s.latitude <= maxLat &&
-                        s.longitude >= minLng &&
-                        s.longitude <= maxLng
+                Task { @MainActor in
 
-                    let levelAllowed = self.userCanSee(session: s)
+                    // Garde toutes les session
+                    self.allSessions = all
 
-                    return inRegion && levelAllowed
+                    // puis refiltre localement
+                    if let region = self.currentRegion {
+                        self.updateVisibleSessions(for: region)
+                    }
                 }
-
-                self.updateSelectedSpotSessions()
             }
     }
+    
+    // Filtre les sessions visibles dans la région affichée
+    func updateVisibleSessions(
+        for region: MKCoordinateRegion
+    ) {
 
-    // filtre spot
-    func sessions(for spot: Spot) -> [SurfSession] {
-        sessions.filter { $0.spotId == spot.id }
-    }
+        // Sauvegarde la région actuelle
+        currentRegion = region
 
-    func updateSelectedSpotSessions() {
-        guard let spotID = selectedSpotID,
-              let spot = spots.first(where: { $0.id == spotID }) else {
-            sessionsForSelectedSpot = []
-            return
+        // Limites visibles de la map
+        let minLat =
+            region.center.latitude -
+            region.span.latitudeDelta / 2
+
+        let maxLat =
+            region.center.latitude +
+            region.span.latitudeDelta / 2
+
+        let minLng =
+            region.center.longitude -
+            region.span.longitudeDelta / 2
+
+        let maxLng =
+            region.center.longitude +
+            region.span.longitudeDelta / 2
+
+        // Filtre uniquement les sessions visibles à l'écran
+        let filtered = allSessions.filter { session in
+
+            session.latitude >= minLat &&
+            session.latitude <= maxLat &&
+            session.longitude >= minLng &&
+            session.longitude <= maxLng
         }
-        sessionsForSelectedSpot = sessions(for: spot)
+
+        // Update UI principal
+        DispatchQueue.main.async {
+
+            self.sessions = filtered
+            self.updateSelectedSpotSessions()
+        }
     }
 
+
+    
+
+   
+
+    // sessions visible sur un spot
+    func sessions(for spot: Spot) -> [SurfSession] {
+
+        sessions.filter {
+
+            $0.spotId == spot.id
+            && userCanSee(session: $0)
+        }
+    }
+
+    // Met à jour les sessions du spot actuellement sélectionné
+    func updateSelectedSpotSessions() {
+
+        let updatedSessions: [SurfSession]
+
+        // Recharge les sessions du spot sélectionné
+        if let spotID = selectedSpotID,
+           let spot = spots.first(where: { $0.id == spotID }) {
+
+            updatedSessions = sessions(for: spot)
+
+        } else {
+            // Aucun spot sélectionné
+            updatedSessions = []
+        }
+
+        // Refresh UI principal
+        DispatchQueue.main.async {
+
+            self.sessionsForSelectedSpot = updatedSessions
+        }
+    }
+
+    // Change le spot selectionné
     func selectSpot(id: String?) {
         selectedSpotID = id
     }
@@ -208,12 +286,14 @@ final class SessionViewModel: ObservableObject {
         let sessionId = UUID().uuidString
         let geohash = GeoHash.encode(latitude: spot.latitude, longitude: spot.longitude)
         
+        // expiration auto chat/session
         let endAt = Calendar.current.date(
             byAdding: .hour,
             value: 48,
             to: date
         )!
 
+        // session local
         let newSession = SurfSession(
             id: sessionId,
             spotName: spot.name,
@@ -237,7 +317,7 @@ final class SessionViewModel: ObservableObject {
 
         do {
           
-            //Créer session
+            //Créer session Firestore
             try await db.collection("sessions")
                 .document(sessionId)
                 .setData([

@@ -1,203 +1,738 @@
 import SwiftUI
 import MapKit
 
-class SpotAnnotation: NSObject, MKAnnotation {
+
+final class SpotAnnotation: NSObject, MKAnnotation {
+
+    // Spot associé au pin
     let spot: Spot
-    var coordinate: CLLocationCoordinate2D { spot.coordinate }
-    var title: String? { spot.name }
-    var subtitle: String? { spot.id }
-    
+
+    // Coordonnées MapKit du spot
+    var coordinate: CLLocationCoordinate2D {
+        spot.coordinate
+    }
+
     init(spot: Spot) {
         self.spot = spot
     }
 }
 
-// MapView pour la SurfMapView (session / spots) en écoute de zone dynamique
+
 struct SpotClusterMapViewSingle: UIViewRepresentable {
 
     let spots: [Spot]
-    let hasSession: (Spot) -> Bool
-
+    
+    // Vérifie si un spot possède une session ouverte
+    let hasOpenSession: (Spot) -> Bool
+    // Vérifie si un spot possède uniquement des sessions complètes
+    let hasOnlyFullSession: (Spot) -> Bool
+    // Spot actuellement selectionné
     @Binding var selectedSpotID: String?
+    // Spot à focus depuis la recherche
     @Binding var focusedSpotID: String?
-
+    // région affiché sur la map
     @Binding var region: MKCoordinateRegion
+
     var onRegionChanged: ((MKCoordinateRegion) -> Void)?
 
-    func makeUIView(context: Context) -> MKMapView {
-        let map = MKMapView()
-        map.delegate = context.coordinator
-        map.isRotateEnabled = false
-        map.showsCompass = false
-        map.showsScale = false
-
-        // Définir une région initiale légèrement dézoomée pour la France
-        let franceCenter = CLLocationCoordinate2D(latitude: 46.6, longitude: -1.0)
-        let franceSpan = MKCoordinateSpan(latitudeDelta: 8.0, longitudeDelta: 8.0) // plus grand que 7.0 pour englober toute la France
-        let initialRegion = MKCoordinateRegion(center: franceCenter, span: franceSpan)
-
-        map.setRegion(initialRegion, animated: false)
-
-        // Enregistrement des vues
-        map.register(PinAnnotationView.self, forAnnotationViewWithReuseIdentifier: "pin")
-        map.register(ClusterAnnotationView.self, forAnnotationViewWithReuseIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier)
-
-        return map
-    }
-
-    func updateUIView(_ map: MKMapView, context: Context) {
-
-        // Synchronisation des annotations
-        let existing = map.annotations.compactMap { $0 as? SpotAnnotation }
-        let existingIDs = Set(existing.map { $0.spot.id })
-        let newIDs = Set(spots.map { $0.id })
-
-        let toRemove = existing.filter { !newIDs.contains($0.spot.id) }
-        let toAdd = spots.filter { !existingIDs.contains($0.id) }.map { SpotAnnotation(spot: $0) }
-
-        map.removeAnnotations(toRemove)
-        map.addAnnotations(toAdd)
-
-        // Rafraîchissement complet
-        for annotation in map.annotations {
-            if let clusterView = map.view(for: annotation) as? ClusterAnnotationView,
-               let cluster = annotation as? MKClusterAnnotation {
-                let hasSessionInCluster = cluster.memberAnnotations.contains { member in
-                    guard let spotAnnotation = member as? SpotAnnotation else { return false }
-                    return hasSession(spotAnnotation.spot)
-                }
-                clusterView.configure(memberCount: cluster.memberAnnotations.count, hasSession: hasSessionInCluster)
-            } else if let pinView = map.view(for: annotation) as? PinAnnotationView,
-                      let spotAnnotation = annotation as? SpotAnnotation {
-                let hasSession = hasSession(spotAnnotation.spot)
-                let isSelected = selectedSpotID == spotAnnotation.spot.id
-                pinView.configure(hasSession: hasSession, isSelected: isSelected)
-            }
-        }
-     
-    }
-
+    // Coordinateur UIKit / MapKit
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
 
-    class Coordinator: NSObject, MKMapViewDelegate {
+    func makeUIView(context: Context) -> MKMapView {
+
+        // Création map native iOS
+        let map = MKMapView()
+
+        map.delegate = context.coordinator
+
+        map.isRotateEnabled = false
+        map.showsCompass = false
+        map.showsScale = false
+
+        // Cache les points d'intérêt Apple Maps
+        map.pointOfInterestFilter = .excludingAll
+
+        // Enregistre les vues des pins
+        map.register(
+            PremiumPinAnnotationView.self,
+            forAnnotationViewWithReuseIdentifier: "pin"
+        )
+
+        // Enregistre les vues des clusters
+        map.register(
+            PremiumClusterAnnotationView.self,
+            forAnnotationViewWithReuseIdentifier:
+                MKMapViewDefaultClusterAnnotationViewReuseIdentifier
+        )
+
+        // Région initiale map
+        map.setRegion(region, animated: false)
+
+        return map
+    }
+
+    // Synchronisation SwiftUI -> MapKit
+    func updateUIView(
+        _ map: MKMapView,
+        context: Context
+    ) {
+
+        // Région actuelle de la map
+        let current = map.region.center
+        let target = region.center
+
+        if abs(current.latitude - target.latitude) > 0.01 ||
+            abs(current.longitude - target.longitude) > 0.01 {
+
+            // Déplace la map vers la région cible
+            map.setRegion(region, animated: true)
+        }
+
+        // Pins déjà affichés
+        let existingAnnotations =
+            map.annotations.compactMap {
+                $0 as? SpotAnnotation
+            }
+
+        let existingIDs = Set(
+            existingAnnotations.map {
+                $0.spot.id
+            }
+        )
+
+        // Ids des spots à afficher
+        let newIDs = Set(
+            spots.map {
+                $0.id
+            }
+        )
+
+        let annotationsToRemove =
+            existingAnnotations.filter {
+                !newIDs.contains($0.spot.id)
+            }
+
+        let annotationsToAdd =
+            spots
+            .filter {
+                !existingIDs.contains($0.id)
+            }
+            .map {
+                SpotAnnotation(spot: $0)
+            }
+
+        if !annotationsToRemove.isEmpty {
+
+            // Supprime les anciens pins
+            map.removeAnnotations(
+                annotationsToRemove
+            )
+        }
+
+        if !annotationsToAdd.isEmpty {
+
+            // Ajoute les nouveaux pins
+            map.addAnnotations(
+                annotationsToAdd
+            )
+        }
+
+        // Refresh manuel des styles visibles
+        for annotation in map.annotations {
+
+            guard let view =
+                map.view(for: annotation)
+            else {
+                continue
+            }
+
+            // Pin
+            if let spotAnnotation =
+                annotation as? SpotAnnotation,
+
+               let pinView =
+                view as? PremiumPinAnnotationView {
+
+                // Vérifie si le spot a une session ouverte
+                let hasOpen =
+                    hasOpenSession(
+                        spotAnnotation.spot
+                    )
+                // Vérifie si le spot est complet
+                let hasFullOnly =
+                    !hasOpen &&
+                    hasOnlyFullSession(
+                        spotAnnotation.spot
+                    )
+                // Vérifie si le spot est sélectionné
+                let isSelected =
+                    selectedSpotID ==
+                    spotAnnotation.spot.id
+
+                pinView.configure(
+                    hasOpen: hasOpen,
+                    hasFullOnly: hasFullOnly,
+                    isSelected: isSelected
+                )
+            }
+
+            // Cluster
+            else if let cluster =
+                annotation as? MKClusterAnnotation,
+
+                    let clusterView =
+                    view as? PremiumClusterAnnotationView {
+                // Spots contenus dans le cluster
+                let clusterSpots =
+                    cluster.memberAnnotations.compactMap {
+                        ($0 as? SpotAnnotation)?.spot
+                    }
+
+                let hasOpen =
+                    clusterSpots.contains {
+                        hasOpenSession($0)
+                    }
+
+                let hasFullOnly =
+                    !hasOpen &&
+                    clusterSpots.contains {
+                        hasOnlyFullSession($0)
+                    }
+
+                clusterView.configure(
+                    count: cluster.memberAnnotations.count,
+                    hasOpen: hasOpen,
+                    hasFullOnly: hasFullOnly
+                )
+            }
+        }
+    }
+}
+
+
+extension SpotClusterMapViewSingle {
+
+    final class Coordinator:
+    NSObject,
+    MKMapViewDelegate {
+
         let parent: SpotClusterMapViewSingle
 
         init(_ parent: SpotClusterMapViewSingle) {
             self.parent = parent
         }
 
-        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-            parent.region = mapView.region
-            parent.onRegionChanged?(mapView.region)
+        // Détecte déplacement / zoom map
+        func mapView(
+            _ mapView: MKMapView,
+            regionDidChangeAnimated animated: Bool
+        ) {
+
+            // Synchronisation SwiftUI
+            DispatchQueue.main.async {
+
+                self.parent.region = mapView.region
+
+                self.parent.onRegionChanged?(
+                    mapView.region
+                )
+            }
         }
 
-        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        // Création des vues MapKit
+        func mapView(
+            _ mapView: MKMapView,
+            viewFor annotation: MKAnnotation
+        ) -> MKAnnotationView? {
 
-            if let cluster = annotation as? MKClusterAnnotation {
-                let clusterView = mapView.dequeueReusableAnnotationView(
-                    withIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier,
-                    for: cluster
-                ) as! ClusterAnnotationView
-
-                let hasSessionInCluster = cluster.memberAnnotations.contains { member in
-                    guard let spotAnnotation = member as? SpotAnnotation else { return false }
-                    return parent.hasSession(spotAnnotation.spot)
-                }
-
-                clusterView.configure(memberCount: cluster.memberAnnotations.count, hasSession: hasSessionInCluster)
-                return clusterView
+            if annotation is MKUserLocation {
+                return nil
             }
 
-            guard let spotAnnotation = annotation as? SpotAnnotation else { return nil }
-            let pinView = mapView.dequeueReusableAnnotationView(withIdentifier: "pin", for: annotation) as! PinAnnotationView
-            let isSelected = parent.selectedSpotID == spotAnnotation.spot.id
-            let hasSession = parent.hasSession(spotAnnotation.spot)
-            pinView.configure(hasSession: hasSession, isSelected: isSelected)
-            return pinView
+            if let cluster =
+                annotation as? MKClusterAnnotation {
+
+                // Réutilisation vue cluster
+                let view = mapView.dequeueReusableAnnotationView(
+                    withIdentifier:
+                        MKMapViewDefaultClusterAnnotationViewReuseIdentifier,
+                    for: cluster
+                ) as! PremiumClusterAnnotationView
+
+                // Spots présents dans le cluster
+                let spots = cluster.memberAnnotations.compactMap {
+                    ($0 as? SpotAnnotation)?.spot
+                }
+
+                let hasOpen = spots.contains {
+                    parent.hasOpenSession($0)
+                }
+
+                let hasFullOnly =
+                    !hasOpen &&
+                    spots.contains {
+                        parent.hasOnlyFullSession($0)
+                    }
+
+                view.configure(
+                    count: cluster.memberAnnotations.count,
+                    hasOpen: hasOpen,
+                    hasFullOnly: hasFullOnly
+                )
+
+                return view
+            }
+
+            guard let annotation =
+                annotation as? SpotAnnotation else {
+                return nil
+            }
+
+            // Réutilisation vue pin
+            let view = mapView.dequeueReusableAnnotationView(
+                withIdentifier: "pin",
+                for: annotation
+            ) as! PremiumPinAnnotationView
+
+            let hasOpen =
+                parent.hasOpenSession(annotation.spot)
+
+            let hasFullOnly =
+                !hasOpen &&
+                parent.hasOnlyFullSession(annotation.spot)
+
+            let isSelected =
+                parent.selectedSpotID ==
+                annotation.spot.id
+
+            view.configure(
+                hasOpen: hasOpen,
+                hasFullOnly: hasFullOnly,
+                isSelected: isSelected
+            )
+
+            return view
         }
 
-        func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-            if let cluster = view.annotation as? MKClusterAnnotation {
-                let coords = cluster.memberAnnotations.map { $0.coordinate }
-                let region = MKCoordinateRegion(coords: coords)
-                mapView.setRegion(region, animated: true)
+        // Gestion tap utilisateur
+        func mapView(
+            _ mapView: MKMapView,
+            didSelect view: MKAnnotationView
+        ) {
+
+        
+            if let cluster =
+                view.annotation as? MKClusterAnnotation {
+
+                // Coordonnées des pins du cluster
+                let coords = cluster.memberAnnotations.map {
+                    $0.coordinate
+                }
+
+                let region = MKCoordinateRegion(
+                    coords: coords
+                )
+
+                // Zoom sur le cluster
+                mapView.setRegion(
+                    region,
+                    animated: true
+                )
+
                 return
             }
 
-            guard let annotation = view.annotation as? SpotAnnotation else { return }
-            parent.selectedSpotID = annotation.spot.id
-            parent.focusedSpotID = annotation.spot.id
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            mapView.deselectAnnotation(annotation, animated: false)
+    
+            guard let annotation =
+                view.annotation as? SpotAnnotation else {
+                return
+            }
+
+            // Sélection du spot cliqué
+            parent.selectedSpotID =
+                annotation.spot.id
+
+            UIImpactFeedbackGenerator(
+                style: .light
+            ).impactOccurred()
+
+            mapView.deselectAnnotation(
+                annotation,
+                animated: false
+            )
         }
     }
 }
 
-// Pin individuel
-class PinAnnotationView: MKMarkerAnnotationView {
-    func configure(hasSession: Bool, isSelected: Bool) {
-        clusteringIdentifier = "spots"
-        canShowCallout = false
-        markerTintColor = hasSession ? .systemBlue : (isSelected ? UIColor(AppColors.action) : .white)
-        glyphImage = hasSession ? UIImage(systemName: "figure.surfing") : UIImage(systemName: "wave.3.right")
-        glyphTintColor = (hasSession || isSelected) ? .white : .black
-        addSessionBadge(hasSession)
-    }
-    
-    private func addSessionBadge(_ show: Bool) {
-        subviews.filter { $0.tag == 999 }.forEach { $0.removeFromSuperview() }
-        guard show else { return }
-        let badge = UIView(frame: CGRect(x: -5, y: -5, width: 10, height: 10))
-        badge.backgroundColor = .systemRed
-        badge.layer.cornerRadius = 5
-        badge.layer.borderWidth = 1
-        badge.layer.borderColor = UIColor.white.cgColor
-        badge.tag = 999
-        addSubview(badge)
-    }
-}
 
-// Cluster
-class ClusterAnnotationView: MKMarkerAnnotationView {
+// PIN
+final class PremiumPinAnnotationView:
+MKAnnotationView {
 
-    private let badgeLayer = CALayer()
+    private let outerView = UIView()
+    private let innerView = UIView()
 
-    override init(annotation: MKAnnotation?, reuseIdentifier: String?) {
-        super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
+    private var currentHasOpen = false
+    private var currentHasFullOnly = false
+    private var currentSelected = false
+
+    override init(
+        annotation: MKAnnotation?,
+        reuseIdentifier: String?
+    ) {
+
+        super.init(
+            annotation: annotation,
+            reuseIdentifier: reuseIdentifier
+        )
 
         clusteringIdentifier = "spots"
+
+        collisionMode = .circle
+
+        displayPriority = .defaultHigh
+
         canShowCallout = false
-        displayPriority = .required
 
-        badgeLayer.backgroundColor = UIColor.systemRed.cgColor
-        badgeLayer.cornerRadius = 5
-        badgeLayer.borderWidth = 1
-        badgeLayer.borderColor = UIColor.white.cgColor
-        badgeLayer.isHidden = true
+        bounds = CGRect(
+            x: 0,
+            y: 0,
+            width: 24,
+            height: 24
+        )
 
-        layer.addSublayer(badgeLayer)
+        centerOffset = .zero
+
+        setup()
     }
 
-    required init?(coder aDecoder: NSCoder) {
+    required init?(coder: NSCoder) {
         fatalError()
     }
 
-    override func layoutSubviews() {
-        super.layoutSubviews()
+    override func prepareForReuse() {
 
-        // position pastille en haut à gauche du cluster
-        badgeLayer.frame = CGRect(x: -4, y: -4, width: 10, height: 10)
+        super.prepareForReuse()
+
+        clusteringIdentifier = "spots"
+
+        displayPriority = .defaultHigh
+
+        currentHasOpen = false
+        currentHasFullOnly = false
+        currentSelected = false
+
+        transform = .identity
     }
 
-    func configure(memberCount: Int, hasSession: Bool) {
+    override func prepareForDisplay() {
 
-        glyphText = "\(memberCount)"
-        glyphTintColor = .white
+        super.prepareForDisplay()
 
-        markerTintColor = hasSession ? .systemBlue : .systemGray
+        applyStyle()
+    }
 
-        badgeLayer.isHidden = !hasSession
+    // Construction visuelle du pin
+    private func setup() {
+
+        backgroundColor = .clear
+
+        outerView.frame = bounds
+
+        outerView.layer.cornerRadius = 12
+
+        addSubview(outerView)
+
+        innerView.frame = CGRect(
+            x: 6,
+            y: 6,
+            width: 12,
+            height: 12
+        )
+
+        innerView.layer.cornerRadius = 6
+
+        outerView.addSubview(innerView)
+    }
+
+    // Configure état visuel du pin
+    func configure(
+        hasOpen: Bool,
+        hasFullOnly: Bool,
+        isSelected: Bool
+    ) {
+
+        currentHasOpen = hasOpen
+        currentHasFullOnly = hasFullOnly
+        currentSelected = isSelected
+
+        applyStyle()
+    }
+
+    // Applique le style selon l'état
+    private func applyStyle() {
+
+        outerView.layer.shadowOpacity = 0
+        outerView.layer.shadowRadius = 0
+        outerView.layer.shadowColor = nil
+
+        // Open
+        if currentHasOpen {
+
+            outerView.backgroundColor =
+                UIColor(AppColors.primary)
+
+            outerView.layer.borderWidth = 1.5
+
+            outerView.layer.borderColor =
+                UIColor.white.cgColor
+
+            outerView.layer.shadowColor =
+                UIColor(AppColors.primary).cgColor
+
+            outerView.layer.shadowOpacity = 0.28
+
+            outerView.layer.shadowRadius = 10
+
+            outerView.layer.shadowOffset = .zero
+        }
+
+        // Full
+        else if currentHasFullOnly {
+
+            outerView.backgroundColor =
+                UIColor(AppColors.action)
+
+            outerView.layer.borderWidth = 1.5
+
+            outerView.layer.borderColor =
+                UIColor.white.cgColor
+
+            outerView.layer.shadowColor =
+                UIColor(AppColors.action).cgColor
+
+            outerView.layer.shadowOpacity = 0.22
+
+            outerView.layer.shadowRadius = 8
+
+            outerView.layer.shadowOffset = .zero
+        }
+
+        // Vide
+        else {
+
+            outerView.backgroundColor = .white
+
+            outerView.layer.borderWidth = 1.2
+
+            outerView.layer.borderColor =
+                UIColor(AppColors.primary).cgColor
+
+            outerView.layer.shadowColor =
+                UIColor.black.cgColor
+
+            outerView.layer.shadowOpacity = 0.08
+
+            outerView.layer.shadowRadius = 6
+
+            outerView.layer.shadowOffset =
+                CGSize(width: 0, height: 3)
+        }
+
+        innerView.isHidden = true
+
+        // Agrandit le pin sélectionné
+        transform =
+            currentSelected
+            ? CGAffineTransform(
+                scaleX: 1.25,
+                y: 1.25
+            )
+            : .identity
+    }
+}
+
+
+// CLUSTER
+final class PremiumClusterAnnotationView:
+MKAnnotationView {
+
+    private let bubbleView = UIView()
+
+    private let countLabel = UILabel()
+
+    private var currentCount = 0
+    private var currentHasOpen = false
+    private var currentHasFullOnly = false
+
+    override init(
+        annotation: MKAnnotation?,
+        reuseIdentifier: String?
+    ) {
+
+        super.init(
+            annotation: annotation,
+            reuseIdentifier: reuseIdentifier
+        )
+
+        collisionMode = .circle
+
+        displayPriority = .required
+
+        canShowCallout = false
+
+        bounds = CGRect(
+            x: 0,
+            y: 0,
+            width: 44,
+            height: 44
+        )
+
+        centerOffset = .zero
+
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError()
+    }
+
+    override func prepareForReuse() {
+
+        super.prepareForReuse()
+
+        currentCount = 0
+        currentHasOpen = false
+        currentHasFullOnly = false
+    }
+
+    override func prepareForDisplay() {
+
+        super.prepareForDisplay()
+
+        applyStyle()
+    }
+
+    // Construction visuelle du cluster
+    private func setup() {
+
+        backgroundColor = .clear
+
+        bubbleView.frame = bounds
+
+        bubbleView.layer.cornerRadius = 22
+
+        addSubview(bubbleView)
+
+        countLabel.frame = bounds
+
+        countLabel.font = .systemFont(
+            ofSize: 16,
+            weight: .bold
+        )
+
+        countLabel.textAlignment = .center
+
+        addSubview(countLabel)
+    }
+
+    // Configure état visuel du cluster
+    func configure(
+        count: Int,
+        hasOpen: Bool,
+        hasFullOnly: Bool
+    ) {
+
+        currentCount = count
+        currentHasOpen = hasOpen
+        currentHasFullOnly = hasFullOnly
+
+        applyStyle()
+    }
+
+    // Applique le style du cluster
+    private func applyStyle() {
+
+        bubbleView.layer.shadowOpacity = 0
+        bubbleView.layer.shadowRadius = 0
+        bubbleView.layer.shadowColor = nil
+
+        // Ouvert
+        if currentHasOpen {
+
+            bubbleView.backgroundColor =
+                UIColor(AppColors.primary)
+
+            bubbleView.layer.borderWidth = 1.5
+
+            bubbleView.layer.borderColor =
+                UIColor.white.cgColor
+
+            countLabel.textColor = .white
+
+            bubbleView.layer.shadowColor =
+                UIColor(AppColors.primary).cgColor
+
+            bubbleView.layer.shadowOpacity = 0.28
+
+            bubbleView.layer.shadowRadius = 10
+
+            bubbleView.layer.shadowOffset = .zero
+        }
+
+        //Pleine
+        else if currentHasFullOnly {
+
+            bubbleView.backgroundColor =
+                UIColor(AppColors.action)
+
+            bubbleView.layer.borderWidth = 1.5
+
+            bubbleView.layer.borderColor =
+                UIColor.white.cgColor
+
+            countLabel.textColor = .white
+
+            bubbleView.layer.shadowColor =
+                UIColor(AppColors.action).cgColor
+
+            bubbleView.layer.shadowOpacity = 0.22
+
+            bubbleView.layer.shadowRadius = 8
+
+            bubbleView.layer.shadowOffset = .zero
+        }
+
+        // Vide
+        else {
+
+            bubbleView.backgroundColor = .white
+
+            bubbleView.layer.borderWidth = 1.2
+
+            bubbleView.layer.borderColor =
+                UIColor(AppColors.primary).cgColor
+
+            countLabel.textColor =
+                UIColor(AppColors.primary)
+
+            bubbleView.layer.shadowColor =
+                UIColor.black.cgColor
+
+            bubbleView.layer.shadowOpacity = 0.08
+
+            bubbleView.layer.shadowRadius = 6
+
+            bubbleView.layer.shadowOffset =
+                CGSize(width: 0, height: 3)
+        }
+
+        // Affiche le nombre
+        countLabel.text =
+            currentCount > 99
+            ? "99+"
+            : "\(currentCount)"
     }
 }
