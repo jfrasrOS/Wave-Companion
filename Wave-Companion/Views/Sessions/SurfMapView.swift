@@ -7,7 +7,6 @@ struct SurfMapView: View {
     @StateObject private var vm = SessionViewModel()
 
     @State private var selectedSession: SurfSession?
-    @State private var showSessionDetail = false
     @State private var showingCreate = false
 
     @State private var searchText = ""
@@ -42,6 +41,7 @@ struct SurfMapView: View {
                     selectedSpotID: $vm.selectedSpotID,
                     focusedSpotID: $vm.selectedSpotID,
                     region: $mapRegion,
+                    focusOffsetRatio: 0.012,
                     onRegionChanged: { region in
                         vm.updateVisibleSessions(for: region)
                     }
@@ -66,7 +66,7 @@ struct SurfMapView: View {
                 .animation(.spring(response: 0.35), value: vm.selectedSpotID)
             }
 
-            .navigationDestination(for: SurfSession.self) { session in
+            .navigationDestination(item: $selectedSession) { session in
 
                 SessionDetailView(
                     vm: SessionDetailViewModel(session: session),
@@ -207,13 +207,15 @@ extension SurfMapView {
 
     func focus(on spot: Spot) {
 
-        withAnimation {
+        let adjustedCenter = CLLocationCoordinate2D(
+            latitude: spot.latitude - 0.012,
+            longitude: spot.longitude
+        )
+
+        withAnimation(.easeInOut(duration: 0.35)) {
 
             mapRegion = MKCoordinateRegion(
-                center: CLLocationCoordinate2D(
-                    latitude: spot.latitude,
-                    longitude: spot.longitude
-                ),
+                center: adjustedCenter,
                 span: MKCoordinateSpan(
                     latitudeDelta: 0.035,
                     longitudeDelta: 0.035
@@ -272,65 +274,90 @@ extension SurfMapView {
 
     var header: some View {
 
-        HStack {
+        HStack(alignment: .top, spacing: 14) {
 
             if let spot = vm.spots.first(where: {
                 $0.id == vm.selectedSpotID
             }) {
 
-                VStack(alignment: .leading, spacing: 4) {
+                MapSnapshotImageView(
+                    latitude: spot.latitude,
+                    longitude: spot.longitude,
+                    width: 82,
+                    height: 82
+                )
+                .clipShape(
+                    RoundedRectangle(cornerRadius: 18)
+                )
+
+                VStack(alignment: .leading, spacing: 6) {
 
                     Text(spot.name)
                         .font(.title3.bold())
 
-                    Text(spot.city)
-                        .font(.caption)
+                    Text("\(spot.city)")
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
+
+                    if vm.sessionsForSelectedSpot.count > 0 {
+
+                        Text(
+                            "\(vm.sessionsForSelectedSpot.count) session\(vm.sessionsForSelectedSpot.count > 1 ? "s" : "")"
+                        )
+                        .font(.caption.weight(.medium))
+                            .foregroundColor(AppColors.primary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                AppColors.primary.opacity(0.12)
+                            )
+                            .clipShape(Capsule())
+                    }
+                    
                 }
-            }
 
-            Spacer()
+                Spacer()
 
-            Button {
+                Button {
 
-                vm.selectSpot(id: nil)
+                    vm.selectSpot(id: nil)
 
-            } label: {
+                } label: {
 
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.black.opacity(0.7))
-                    .frame(width: 30, height: 30)
-                    .background(Color.black.opacity(0.06))
-                    .clipShape(Circle())
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.black.opacity(0.8))
+                        .frame(width: 38, height: 38)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                }
             }
         }
     }
 
     var emptyState: some View {
 
-        VStack(spacing: 8) {
+        VStack(spacing: 14) {
 
-            Image(systemName: "water.waves")
-                .font(.title3)
-                .foregroundColor(AppColors.primary)
+            Text("Aucune session pour le moment")
+                        .font(.title3)
+                        .fontWeight(.semibold)
 
-            Text("Aucune session")
-                .font(.headline)
-
-            Text("Soyez le premier à surfer ici")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                    Text("Soit le premier à en organiser une.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
+        .padding(.vertical, 28)
     }
 
     var sessionsList: some View {
 
         ScrollView(.horizontal, showsIndicators: false) {
 
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
 
                 ForEach(vm.sessionsForSelectedSpot) { session in
 
@@ -347,30 +374,50 @@ extension SurfMapView {
 
                     let canJoin = !isJoined && remaining > 0
 
-                    SessionHorizontalCard(
+                    MapSessionCard(
+
                         session: session,
-                        title: isJoined
-                        ? "Ta session"
-                        : (remaining == 0 ? "Complète" : "Ouverte"),
 
-                        titleColor: isJoined
-                        ? AppColors.primary
-                        : (remaining == 0 ? .gray : .green),
+                        statusText:
+                            isJoined
+                            ? "Ta session"
+                            : (
+                                remaining == 0
+                                ? "Complète"
+                                : "Ouverte"
+                            ),
 
-                        buttonTitle: isJoined
-                        ? "Voir"
-                        : (remaining == 0 ? "Complet" : "Rejoindre"),
+                        statusColor:
+                            isJoined
+                            ? AppColors.primary
+                            : (
+                                remaining == 0
+                                ? .red
+                                : .green
+                            ),
 
-                        buttonEnabled: canJoin || isJoined,
+                        buttonTitle:
+                            isJoined
+                            ? "Voir"
+                            : (
+                                remaining == 0
+                                ? "Complet"
+                                : "Rejoindre"
+                            ),
+
+                        buttonEnabled:
+                            canJoin || isJoined,
+
+                        levelText:
+                            "Min. \(vm.category(for: session.minimumLevel))",
 
                         onTap: {
 
                             if isJoined {
 
                                 selectedSession = session
-                                showSessionDetail = true
-
-                            } else if canJoin {
+                            }
+                            else if canJoin {
 
                                 Task {
                                     await vm.joinSession(session)
@@ -380,7 +427,11 @@ extension SurfMapView {
                     )
                 }
             }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
         }
+        .frame(height: 175)
+        .scrollIndicators(.hidden)
     }
 
     var createButton: some View {
@@ -396,13 +447,18 @@ extension SurfMapView {
                 Image(systemName: "plus")
 
                 Text("Créer une session")
-                    .fontWeight(.bold)
+                    .fontWeight(.semibold)
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(height: 50)
             .background(AppColors.primary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
+            .shadow(
+                color: AppColors.primary.opacity(0.22),
+                radius: 10,
+                y: 4
+            )
         }
     }
 }

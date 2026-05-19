@@ -32,6 +32,8 @@ struct SpotClusterMapViewSingle: UIViewRepresentable {
     @Binding var focusedSpotID: String?
     // région affiché sur la map
     @Binding var region: MKCoordinateRegion
+    // Centre visuellement le spot entre search bar et bottom sheet
+    let focusOffsetRatio: CGFloat
 
     var onRegionChanged: ((MKCoordinateRegion) -> Void)?
 
@@ -350,9 +352,38 @@ extension SpotClusterMapViewSingle {
                 return
             }
 
-            // Sélection du spot cliqué
-            parent.selectedSpotID =
-                annotation.spot.id
+            // Coordonnées réelle du spot selectionné
+            let coordinate = annotation.coordinate
+
+            // Décale la latitude vers le bas pour que le pin apparaisse plus haut
+            let adjustedCenter = CLLocationCoordinate2D(
+                latitude: coordinate.latitude - parent.focusOffsetRatio,
+                longitude: coordinate.longitude
+            )
+
+            // Même niveau de zoom que celui de la barre de recherche
+            let focusedRegion = MKCoordinateRegion(
+                center: adjustedCenter,
+                span: MKCoordinateSpan(
+                    latitudeDelta: 0.035,
+                    longitudeDelta: 0.035
+                )
+            )
+
+            // Animation
+            mapView.setRegion(
+                focusedRegion,
+                animated: true
+            )
+
+            DispatchQueue.main.async {
+
+                // Synchronise la région UIkit -> SwiftUI
+                self.parent.region = focusedRegion
+                // affiche le bottomsheet correspondant
+                self.parent.selectedSpotID =
+                    annotation.spot.id
+            }
 
             UIImpactFeedbackGenerator(
                 style: .light
