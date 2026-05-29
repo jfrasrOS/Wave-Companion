@@ -253,7 +253,10 @@ final class SessionViewModel: ObservableObject {
     func createSession(
         date: Date,
         minLevel: String,
-        maxPeople: Int
+        maxPeople: Int,
+        meetupLatitude: Double?,
+        meetupLongitude: Double?,
+        meetupNote: String?
     ) async {
 
         guard date > Date() else {
@@ -301,6 +304,9 @@ final class SessionViewModel: ObservableObject {
             latitude: spot.latitude,
             longitude: spot.longitude,
             geohash: geohash,
+            meetupLatitude: meetupLatitude,
+            meetupLongitude: meetupLongitude,
+            meetupNote: meetupNote,
             date: date,
             createdAt: Date(),
             creatorId: userId,
@@ -327,6 +333,9 @@ final class SessionViewModel: ObservableObject {
                     "latitude": newSession.latitude,
                     "longitude": newSession.longitude,
                     "geohash": newSession.geohash,
+                    "meetupLatitude": meetupLatitude as Any,
+                    "meetupLongitude": meetupLongitude as Any,
+                    "meetupNote": meetupNote as Any,
                     "date": Timestamp(date: newSession.date),
                     "createdAt": Timestamp(date: newSession.createdAt),
                     "creatorId": newSession.creatorId,

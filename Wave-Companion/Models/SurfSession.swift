@@ -11,6 +11,11 @@ struct SurfSession: Identifiable, Codable, Hashable{
     var longitude: Double
     var geohash: String
     
+    // Point de rencontre
+    var meetupLatitude: Double?
+    var meetupLongitude: Double?
+    var meetupNote: String?
+    
     var date: Date
     var createdAt: Date
     
